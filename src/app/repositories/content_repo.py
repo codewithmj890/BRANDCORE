@@ -3,6 +3,9 @@ M2-06 — Content item and content version repositories.
 
 Content versions are immutable: only INSERT is supported; no UPDATE path.
 The latest version is derived from version_number (no mutable snapshot).
+
+Version number derivation is retried on UNIQUE constraint conflict to handle
+concurrent writes safely (SELECT MAX + 1 is not atomic by itself).
 """
 import hashlib
 
@@ -60,26 +63,35 @@ class ContentVersionRepository(BaseRepository):
         if item is None:
             return None  # caller maps to not-found / cross-workspace error
 
-        # Derive the next version number for this content item.
-        max_ver = await self._first(
-            "SELECT MAX(version_number) AS v FROM content_version WHERE content_item_id = ?",
-            (data.content_item_id,),
-        )
-        next_number = (max_ver["v"] or 0) + 1
-
         body = data.body_text
         sha = hashlib.sha256(body.encode("utf-8")).hexdigest()
         created = now_utc()
 
-        await self._run(
-            """
-            INSERT INTO content_version
-                (id, workspace_id, content_item_id, version_number, body_text,
-                 sha256_hash, submitted_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (version_id, workspace_id, data.content_item_id, next_number, body, sha, data.submitted_by, created),
-        )
+        # Derive the next version number with retry on UNIQUE conflict.
+        max_retries = 3
+        for attempt in range(max_retries):
+            max_ver = await self._first(
+                "SELECT MAX(version_number) AS v FROM content_version WHERE content_item_id = ?",
+                (data.content_item_id,),
+            )
+            next_number = (max_ver["v"] or 0) + 1
+
+            try:
+                await self._run(
+                    """
+                    INSERT INTO content_version
+                        (id, workspace_id, content_item_id, version_number, body_text,
+                         sha256_hash, submitted_by, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (version_id, workspace_id, data.content_item_id, next_number, body, sha, data.submitted_by, created),
+                )
+                break
+            except Exception:
+                if attempt == max_retries - 1:
+                    raise
+                # Concurrent write likely took this version number; retry.
+
         return await self.get(version_id, workspace_id)
 
     async def get(self, version_id: str, workspace_id: str) -> ContentVersion | None:

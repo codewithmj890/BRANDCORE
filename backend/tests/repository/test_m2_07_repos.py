@@ -11,8 +11,6 @@ import json
 import os
 import sqlite3
 
-import sqlite3
-
 import pytest
 
 from app.domain.models import (

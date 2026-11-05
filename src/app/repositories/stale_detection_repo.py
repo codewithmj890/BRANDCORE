@@ -50,26 +50,12 @@ def _fingerprint(row: dict, kind: str) -> str:
 
 class StaleDetectionRepository(BaseRepository):
     async def find_stale_releases(self, workspace_id: str) -> list[StaleRelease]:
-        """Find valid passports whose snapshots no longer match current state."""
-        passports = await self._all(
-            "SELECT * FROM release_passport WHERE workspace_id = ? AND status = 'valid'",
-            (workspace_id,),
-        )
-        stale: list[StaleRelease] = []
-        for p in passports:
-            reason, changed_dep = self._passport_stale_reason(p)
-            if reason is not None:
-                stale.append(StaleRelease(
-                    passport_id=p["id"],
-                    workspace_id=workspace_id,
-                    content_version_id=p["content_version_id"],
-                    content_sha256=p["content_sha256"],
-                    status="stale",
-                    stale_reason=reason,
-                    stale_since="",
-                    changed_dependency=changed_dep,
-                ))
-        return stale
+        """Find valid passports whose snapshots no longer match current state.
+
+        Delegates to the fully-implemented async detection path
+        (find_stale_releases_detailed) so stale releases are actually detected.
+        """
+        return await self.find_stale_releases_detailed(workspace_id)
 
     async def has_status_event(self, passport_id: str, workspace_id: str,
                                status: str) -> bool:
@@ -139,12 +125,6 @@ class StaleDetectionRepository(BaseRepository):
             "WHERE id = ? AND workspace_id = ? AND status = 'active'",
             (policy_id, workspace_id),
         )
-
-    def _passport_stale_reason(self, passport: dict) -> tuple[str | None, str | None]:
-        workspace_id = passport["workspace_id"]
-        # NOTE: this method is async-friendly in structure but performs sync checks
-        # here; async DB lookups are done in find_stale_releases via _check_entry.
-        return (None, None)
 
     async def _check_entry(self, workspace_id: str, entry: dict) -> tuple[str | None, str | None]:
         etype = entry.get("type")

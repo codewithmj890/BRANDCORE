@@ -204,13 +204,6 @@ class AnalysisService:
             from fastapi import HTTPException
             raise HTTPException(status_code=500, detail=f"Database write failed: {exc}")
 
-        # Persist via repositories too (for in-memory test wrapper consistency).
-        for c in claim_dicts:
-            # Already inserted via batch; keep repo model consistent.
-            pass
-        for fd in finding_dicts:
-            pass
-
         # 7. Build structured response.
         return {
             "content_version_id": content_version_id,

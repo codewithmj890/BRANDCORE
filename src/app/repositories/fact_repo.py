@@ -17,10 +17,10 @@ class ApprovedFactRepository(BaseRepository):
             INSERT INTO approved_fact
                 (id, workspace_id, claim_text, numeric_value, unit, qualifier,
                  scope, version, status, previous_version_id, created_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, 1, 'active', NULL, 'brand_admin', ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (fact_id, workspace_id, data.claim_text, data.numeric_value, data.unit,
-             data.qualifier, data.scope, created),
+             data.qualifier, data.scope, 1, 'active', None, 'brand_admin', created),
         )
         return await self.get(fact_id, workspace_id)
 

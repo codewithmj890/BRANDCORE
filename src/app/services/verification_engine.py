@@ -223,9 +223,12 @@ class VerificationEngine:
         fact_qualifier = fact.get("qualifier")
         claim_qualifier = claim.get("qualifier")
         claim_text = (claim.get("claim_text") or "").lower()
-        if fact_qualifier and fact_qualifier.lower() not in claim_text:
-            # Fact requires a qualifier the claim omits.
-            if claim_qualifier != fact_qualifier:
+        if fact_qualifier:
+            # Fact requires a qualifier. Check word-boundary so "up to" is not
+            # falsely found inside words like "update" or "uptime".
+            qualifier_present = bool(re.search(
+                r"\b" + re.escape(fact_qualifier.lower()) + r"\b", claim_text))
+            if not qualifier_present and claim_qualifier != fact_qualifier:
                 findings.append(Finding(
                     id=self._fid("mq", claim["id"]),
                     finding_type="missing_qualifier",
@@ -376,9 +379,10 @@ class VerificationEngine:
         # Qualifier-based strength is the most deterministic signal.
         if qual_l in STRENGTH:
             return STRENGTH[qual_l]
-        # Text-based fallback.
+        # Text-based fallback: match whole words only (word-boundary),
+        # so "all" does not match "already" or "always".
         for word, strength in STRENGTH.items():
-            if word in text_l:
+            if re.search(r"\b" + re.escape(word) + r"\b", text_l):
                 return strength
         return 3  # neutral default
 
