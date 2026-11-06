@@ -10,11 +10,11 @@ import { useState, useCallback } from 'react'
 import { useAuth } from '@clerk/react'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { api } from '@/services/api'
-import { Button, Card, CardBody, CardTitle } from '@/components/ui'
+import { Button, Card, CardBody, CardTitle, EmptyState } from '@/components/ui'
 
 export function WorkspaceOnboarding() {
   const { orgRole } = useAuth()
-  const { setWorkspaceId, setWorkspaceName: ctxSetWorkspaceName, setAuthStatus } = useWorkspace()
+  const { authStatus, setWorkspaceId, setWorkspaceName: ctxSetWorkspaceName, setAuthStatus } = useWorkspace()
   const [provisioning, setProvisioning] = useState(false)
   const [localWorkspaceName, setLocalWorkspaceName] = useState('')
   const [workspaceSlug, setWorkspaceSlug] = useState('')
@@ -45,10 +45,23 @@ export function WorkspaceOnboarding() {
         setProvisioned(true)
       }
     } catch (err) {
+      const detail = (err.message || '').toLowerCase()
       if (err.status === 403) {
         setError('You do not have permission to provision a workspace. Ask an organization administrator.')
       } else if (err.status === 401) {
-        setError('Session expired. Please sign in again.')
+        if (detail.includes('missing authorization') || detail.includes('authentication unavailable')) {
+          setError('Authentication not initialized. Please sign in again.')
+        } else if (detail.includes('not configured') || detail.includes('signing key') || detail.includes('jwks')) {
+          setError('Backend authentication is not configured. Please contact support.')
+        } else if (detail.includes('expired') || detail.includes('invalid signature')) {
+          setError('Session expired. Please sign in again.')
+        } else {
+          setError('Authentication failed. Please sign in again.')
+        }
+      } else if (err.status === 409) {
+        setError('A workspace already exists for your organization. Please refresh the page.')
+      } else if (err.status === 500) {
+        setError('Server error during provisioning. Please try again.')
       } else {
         setError(err.message || 'Failed to provision workspace. Please try again.')
       }
@@ -56,6 +69,46 @@ export function WorkspaceOnboarding() {
       setProvisioning(false)
     }
   }, [localWorkspaceName, workspaceSlug, setWorkspaceId, ctxSetWorkspaceName, setAuthStatus])
+
+  // If Clerk reports signed-out (401 from backend), surface sign-in prompt
+  if (authStatus === 'signed-out') {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-6 max-w-lg mx-auto">
+        <div className="w-16 h-16 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="w-8 h-8 text-red-700 dark:text-red-400"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-text-primary">Session expired</h3>
+        <p className="text-text-secondary text-sm max-w-xs">
+          Your session is no longer valid. Please sign in again to continue.
+        </p>
+        <Button variant="primary" size="sm" onClick={() => window.location.reload()}>
+          Sign in again
+        </Button>
+      </div>
+    )
+  }
+
+  // If Clerk is still loading or no org, show empty state
+  if (authStatus === 'loading' || authStatus === 'no-org') {
+    return (
+      <EmptyState
+        title="Loading workspace"
+        description="Please wait while your workspace is being resolved."
+      />
+    )
+  }
+
 
   if (provisioned) {
     return (
