@@ -68,7 +68,13 @@ class ClerkJwksClient:
         """Return the JWK matching `kid`, refreshing cache if needed."""
         entry = self._cache.get(self.issuer_url)
         if entry is None or entry.is_expired(JWKS_CACHE_TTL_SECONDS):
-            jwks = await self._fetch(self._jwks_url())
+            try:
+                jwks = await self._fetch(self._jwks_url())
+            except Exception:
+                # JWKS fetch failed (e.g. invalid issuer URL, network error).
+                # Return None so the caller raises a proper 401 instead of
+                # crashing with an unhandled exception.
+                return None
             keys = jwks.get("keys", [])
             self._cache[self.issuer_url] = _JwksCacheEntry(keys, time.time())
             # Bound cache size

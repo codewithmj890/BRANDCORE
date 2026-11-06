@@ -139,3 +139,98 @@ class TestWorkspaceAuthIntegration:
         assert resp.status_code == 200
         conn.close()
 
+
+# ---------------------------------------------------------------------------
+# Workspace provisioning tests (POST /api/workspaces/provision)
+# ---------------------------------------------------------------------------
+
+class TestWorkspaceProvision:
+    def setup_method(self):
+        self.conn = _setup_test_db()
+        # Use existing _make_client which already configures env middleware
+        self.client, self.wrapper = _make_client(self.conn)
+
+    def teardown_method(self):
+        self.conn.close()
+        app.dependency_overrides.clear()
+
+    def _override_user(self, org_role="org:admin", org_id="org-3", user_id="user-3"):
+        def mock_clerk_user():
+            return ClerkUser(
+                user_id=user_id,
+                email="test@example.com",
+                org_id=org_id,
+                org_role=org_role,
+                org_permissions=[],
+                claims={"sub": user_id, "org_id": org_id, "org_role": org_role},
+            )
+        app.dependency_overrides[get_current_clerk_user] = mock_clerk_user
+
+    def test_provision_creates_workspace_200(self):
+        """Org admin can provision a new workspace."""
+        self._override_user(org_role="org:admin", org_id="org-3", user_id="user-3")
+        resp = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
+        assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
+        data = resp.json()
+        assert data["provisioned"] is True
+        assert data["name"] == "Acme Corp"
+        assert data["slug"] == "acme-corp"
+        assert data["org_id"] == "org-3"
+        assert data["id"].startswith("ws_")
+
+    def test_provision_slug_auto_generated(self):
+        """Slug is auto-generated from name when not provided."""
+        self._override_user(org_role="org:admin", org_id="org-4", user_id="user-4")
+        resp = self.client.post("/api/workspaces/provision", json={"name": "My Brand"})
+        assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
+        data = resp.json()
+        assert data["slug"] == "my-brand"
+
+    def test_provision_requires_admin_role(self):
+        """Non-admin org members cannot provision workspaces (403)."""
+        self._override_user(org_role="org:member", org_id="org-5", user_id="user-5")
+        resp = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
+        assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
+        data = resp.json()
+        assert "admin" in data["detail"].lower() or "administrator" in data["detail"].lower()
+
+    def test_provision_idempotent_duplicate(self):
+        """Repeated provisioning for the same org returns existing workspace (provisioned: False)."""
+        self._override_user(org_role="org:admin", org_id="org-6", user_id="user-6")
+        resp1 = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
+        assert resp1.status_code == 200
+        data1 = resp1.json()
+        assert data1["provisioned"] is True
+        workspace_id = data1["id"]
+
+        resp2 = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
+        assert resp2.status_code == 200, f"Expected 200, got {resp2.status_code}: {resp2.text}"
+        data2 = resp2.json()
+        assert data2["provisioned"] is False
+        assert data2["id"] == workspace_id  # Same workspace, not duplicated
+
+    def test_provision_list_workspaces_after_provision(self):
+        """Provisioned workspace appears in list endpoint."""
+        self._override_user(org_role="org:admin", org_id="org-7", user_id="user-7")
+        resp = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
+        assert resp.status_code == 200
+
+        list_resp = self.client.get("/api/workspaces")
+        assert list_resp.status_code == 200
+        data = list_resp.json()
+        workspaces = data.get("workspaces", [])
+        assert any(w["org_id"] == "org-7" for w in workspaces), f"Expected workspace for org-7 in {workspaces}"
+
+    def test_provision_no_organization(self):
+        """User without an organization cannot provision (403)."""
+        self._override_user(org_role="org:admin", org_id=None, user_id="user-8")
+        resp = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
+        assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
+
+    def test_provision_requires_auth(self):
+        """Unauthenticated requests to provision return 401."""
+        app.dependency_overrides.clear()
+        client = TestClient(app)
+        resp = client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
+        assert resp.status_code == 401, f"Expected 401, got {resp.status_code}: {resp.text}"
+
