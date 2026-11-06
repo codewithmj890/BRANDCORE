@@ -12,6 +12,10 @@
  * Backend status tracking for honest connectivity display.
  * Auth errors (401/403) are surfaced to the caller — never silently
  * replaced with demo data.
+ *
+ * Response parsing is defensive: response.json() is never called on an
+ * unknown body. Non-JSON error bodies (plain text, HTML, empty) are
+ * handled gracefully and surfaced as structured errors.
  */
 import { getToken } from '@clerk/react'
 
@@ -40,6 +44,65 @@ export function onAuthError(callback) {
   return () => {
     authErrorListeners = authErrorListeners.filter((cb) => cb !== callback)
   }
+}
+
+// Safely parse a response body. Tries JSON first, falls back to text,
+// then returns null if the body is empty or unreadable. Never throws.
+async function safeParseBody(res) {
+  const contentType = res.headers.get('content-type') || ''
+  const isJson = contentType.includes('application/json')
+
+  if (isJson) {
+    try {
+      return await res.json()
+    } catch {
+      // Malformed JSON — fall through to text
+    }
+  }
+
+  try {
+    const text = await res.text()
+    if (!text || text.trim() === '') {
+      return null
+    }
+    // Return raw text wrapped so callers can surface it
+    return { _rawText: text, _rawStatus: res.status }
+  } catch {
+    return null
+  }
+}
+
+// Build a structured error from a response, handling JSON and non-JSON bodies.
+function buildError(res, parsed) {
+  const status = res.status
+  let message = 'Request failed'
+  let code = null
+
+  if (parsed && typeof parsed === 'object') {
+    message = parsed?.error?.message ?? parsed?.detail ?? parsed?._rawText ?? message
+    code = parsed?.error?.code ?? parsed?.code ?? null
+  } else if (typeof parsed === 'string') {
+    message = parsed
+  }
+
+  // Map common status codes to sensible defaults
+  if (!message || message === 'Request failed') {
+    switch (status) {
+      case 400: message = 'Bad request'; break
+      case 401: message = 'Unauthorized'; break
+      case 403: message = 'Forbidden'; break
+      case 404: message = 'Not found'; break
+      case 409: message = 'Conflict'; break
+      case 422: message = 'Validation error'; break
+      case 500: message = 'Internal server error'; break
+      default: message = `Request failed (${status})`
+    }
+  }
+
+  const err = new Error(message)
+  err.status = status
+  err.code = code
+  return err
 }
 
 // Public requests — no Clerk token
@@ -81,14 +144,12 @@ async function publicRequest(method, path, body) {
     clearTimeout(timeoutId)
 
     notifyStatus('connected')
-    const data = await res.json()
+
+    const parsed = await safeParseBody(res)
     if (!res.ok) {
-      const err = new Error(data?.error?.message ?? 'Request failed')
-      err.code = data?.error?.code
-      err.status = res.status
-      throw err
+      throw buildError(res, parsed)
     }
-    return data
+    return parsed
   } catch (err) {
     clearTimeout(timeoutId)
     if (err.name === 'AbortError') {
@@ -118,35 +179,25 @@ async function protectedRequest(method, path, body) {
     const res = await fetch(`${BASE}${path}`, { ...options, signal: controller.signal })
     clearTimeout(timeoutId)
 
+    notifyStatus('connected')
+
+    const parsed = await safeParseBody(res)
+
     if (res.status === 401) {
-      notifyStatus('connected')
       notifyAuthError(401)
-      const data = await res.json().catch(() => ({}))
-      const err = new Error(data?.error?.message ?? 'Unauthorized')
-      err.status = 401
-      err.code = data?.error?.code
-      throw err
+      throw buildError(res, parsed)
     }
 
     if (res.status === 403) {
-      notifyStatus('connected')
       notifyAuthError(403)
-      const data = await res.json().catch(() => ({}))
-      const err = new Error(data?.error?.message ?? 'Forbidden')
-      err.status = 403
-      err.code = data?.error?.code
-      throw err
+      throw buildError(res, parsed)
     }
 
-    notifyStatus('connected')
-    const data = await res.json()
     if (!res.ok) {
-      const err = new Error(data?.error?.message ?? 'Request failed')
-      err.code = data?.error?.code
-      err.status = res.status
-      throw err
+      throw buildError(res, parsed)
     }
-    return data
+
+    return parsed
   } catch (err) {
     clearTimeout(timeoutId)
     if (err.name === 'AbortError') {

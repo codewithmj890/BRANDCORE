@@ -47,21 +47,26 @@ async def list_workspaces(
     if not user.has_organization:
         return {"workspaces": []}
 
-    mapping_repo = WorkspaceOrgMappingRepository(db)
-    org_id = user.org_id
-    workspace_id = await mapping_repo.get_workspace_id_by_org_id(org_id)
+    try:
+        mapping_repo = WorkspaceOrgMappingRepository(db)
+        org_id = user.org_id
+        workspace_id = await mapping_repo.get_workspace_id_by_org_id(org_id)
 
-    workspaces = []
-    if workspace_id:
-        workspace = await WorkspaceRepository(db).get(workspace_id)
-        if workspace:
-            d = workspace.model_dump() if hasattr(workspace, "model_dump") else dict(workspace)
-            workspaces.append({
-                "id": d["id"],
-                "name": d["name"],
-                "slug": d.get("slug"),
-                "org_id": org_id,
-            })
+        workspaces = []
+        if workspace_id:
+            workspace = await WorkspaceRepository(db).get(workspace_id)
+            if workspace:
+                d = workspace.model_dump() if hasattr(workspace, "model_dump") else dict(workspace)
+                workspaces.append({
+                    "id": d["id"],
+                    "name": d["name"],
+                    "slug": d.get("slug"),
+                    "org_id": org_id,
+                })
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(exc)}")
 
     return {"workspaces": workspaces}
 
@@ -74,8 +79,8 @@ async def provision_workspace(
 ):
     """Provision a new BRANDCORE workspace for the authenticated user's Clerk organization.
     
-    Only organization admins can provision. Idempotent — returns existing mapping
-    if one already exists for this org.
+    Only organization admins can provision workspaces. Idempotent — returns existing
+    mapping if one already exists for this org.
     """
     env = request.scope.get("env")
     if env is None:
@@ -94,53 +99,58 @@ async def provision_workspace(
             detail="Administrator role required to provision a workspace",
         )
 
-    mapping_repo = WorkspaceOrgMappingRepository(db)
-    org_id = user.org_id
+    try:
+        mapping_repo = WorkspaceOrgMappingRepository(db)
+        org_id = user.org_id
 
-    # Idempotent: if mapping already exists, return existing workspace
-    existing_workspace_id = await mapping_repo.get_workspace_id_by_org_id(org_id)
-    if existing_workspace_id:
-        existing = await WorkspaceRepository(db).get(existing_workspace_id)
-        if existing:
-            d = existing.model_dump() if hasattr(existing, "model_dump") else dict(existing)
-            return {
-                "id": d["id"],
-                "name": d["name"],
-                "slug": d.get("slug"),
-                "org_id": org_id,
-                "provisioned": False,
-            }
+        # Idempotent: if mapping already exists, return existing workspace
+        existing_workspace_id = await mapping_repo.get_workspace_id_by_org_id(org_id)
+        if existing_workspace_id:
+            existing = await WorkspaceRepository(db).get(existing_workspace_id)
+            if existing:
+                d = existing.model_dump() if hasattr(existing, "model_dump") else dict(existing)
+                return {
+                    "id": d["id"],
+                    "name": d["name"],
+                    "slug": d.get("slug"),
+                    "org_id": org_id,
+                    "provisioned": False,
+                }
 
-    # Create workspace
-    workspace_id = f"ws_{uuid4().hex[:12]}"
-    slug = body.slug or body.name.lower().replace(" ", "-")
-    now = datetime.now(timezone.utc).isoformat()
+        # Create workspace
+        workspace_id = f"ws_{uuid4().hex[:12]}"
+        slug = body.slug or body.name.lower().replace(" ", "-")
+        now = datetime.now(timezone.utc).isoformat()
 
-    repo = WorkspaceRepository(db)
-    await repo.create(workspace_id, type("WorkspaceCreate", (), {
-        "name": body.name,
-        "slug": slug,
-        "status": "active",
-    })())
+        repo = WorkspaceRepository(db)
+        await repo.create(workspace_id, type("WorkspaceCreate", (), {
+            "name": body.name,
+            "slug": slug,
+            "status": "active",
+        })())
 
-    # Create org-to-workspace mapping
-    await mapping_repo.create_mapping(
-        mapping_id=f"map_{uuid4().hex[:12]}",
-        workspace_id=workspace_id,
-        org_id=org_id,
-        created_by=user.user_id,
-        created_at=now,
-    )
+        # Create org-to-workspace mapping
+        await mapping_repo.create_mapping(
+            mapping_id=f"map_{uuid4().hex[:12]}",
+            workspace_id=workspace_id,
+            org_id=org_id,
+            created_by=user.user_id,
+            created_at=now,
+        )
 
-    workspace = await repo.get(workspace_id)
-    d = workspace.model_dump() if hasattr(workspace, "model_dump") else dict(workspace)
-    return {
-        "id": d["id"],
-        "name": d["name"],
-        "slug": d.get("slug"),
-        "org_id": org_id,
-        "provisioned": True,
-    }
+        workspace = await repo.get(workspace_id)
+        d = workspace.model_dump() if hasattr(workspace, "model_dump") else dict(workspace)
+        return {
+            "id": d["id"],
+            "name": d["name"],
+            "slug": d.get("slug"),
+            "org_id": org_id,
+            "provisioned": True,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Provisioning failed: {str(exc)}")
 
 
 @router.get("/workspaces/{workspace_id}")
