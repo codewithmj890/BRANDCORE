@@ -8,8 +8,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { api } from '@/services/api'
 import {
-  Card, StatusBadge, EmptyState, ErrorState, Skeleton, SkeletonRow,
-  FormField, FormInput, FormSelect,
+  Card, CardFooter, StatusBadge, EmptyState, ErrorState, Skeleton, SkeletonRow,
+  FormField, FormInput, FormSelect, FormTextarea, Button,
 } from '@/components/ui'
 import { PageHeader } from '@/components/layout'
 
@@ -35,6 +35,9 @@ export default function EvidenceLibraryPage() {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [openCreate, setOpenCreate] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState(null)
 
   const fetchEvidence = useCallback(async () => {
     if (!workspaceId || authStatus !== 'ready') {
@@ -61,6 +64,28 @@ export default function EvidenceLibraryPage() {
       setLoading(false)
     }
   }, [workspaceId, authStatus])
+
+  const handleCreateEvidence = async (evidenceData) => {
+    if (!workspaceId) return
+    setCreating(true)
+    setCreateError(null)
+    try {
+      const result = await api.createEvidence(workspaceId, evidenceData)
+      setEvidence(prev => [result, ...prev])
+      setOpenCreate(false)
+      setCreateError(null)
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
+        setError(err.status === 401
+          ? 'Session expired. Please sign in again.'
+          : 'You do not have access to this workspace.')
+      } else {
+        setCreateError(err.message || 'Failed to create evidence source.')
+      }
+    } finally {
+      setCreating(false)
+    }
+  }
 
   useEffect(() => {
     fetchEvidence()
@@ -127,7 +152,7 @@ export default function EvidenceLibraryPage() {
           title="No evidence sources yet"
           description="Add your first evidence source to begin linking evidence to approved facts."
           action="Add Evidence Source"
-          onAction={() => { /* add evidence flow */ }}
+          onAction={() => setOpenCreate(true)}
         />
       )}
 
@@ -221,6 +246,145 @@ export default function EvidenceLibraryPage() {
           </div>
         </>
       )}
+      {openCreate && (
+        <EvidenceCreateDialog
+          workspaceId={workspaceId}
+          onSave={handleCreateEvidence}
+          onClose={() => setOpenCreate(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function EvidenceCreateDialog({ workspaceId, onSave, onClose }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    source_type: 'internal_study',
+    summary: '',
+    source_url: '',
+  })
+  const [errors, setErrors] = useState({})
+  const [saving, setSaving] = useState(false)
+
+  const validate = useCallback(() => {
+    const newErrors = {}
+    if (!formData.title.trim()) newErrors.title = 'Title is required'
+    if (!formData.source_type) newErrors.source_type = 'Source type is required'
+    if (!formData.summary.trim()) newErrors.summary = 'Summary is required'
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }, [formData])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!validate()) return
+    setSaving(true)
+    const payload = {
+      title: formData.title.trim(),
+      source_type: formData.source_type,
+      summary: formData.summary.trim(),
+      source_url: formData.source_url.trim() || null,
+    }
+    onSave(payload)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Add evidence source"
+    >
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-surface border border-border rounded-lg shadow-lg w-full max-w-2xl p-6 mx-4 md:mx-0">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Add Evidence Source</h2>
+            <p className="text-muted-foreground text-sm mt-1">
+              Register a new evidence source to link to approved facts.
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </Button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <FormField
+            label="Title"
+            required
+            error={errors.title}
+            helperText="A descriptive name for this evidence source"
+          >
+            <FormInput
+              id="evidence-title"
+              placeholder="e.g. Q3 Energy Efficiency Study"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            />
+          </FormField>
+
+          <FormField
+            label="Source Type"
+            required
+            error={errors.source_type}
+          >
+            <FormSelect
+              id="evidence-source-type"
+              value={formData.source_type}
+              onChange={(e) => setFormData({ ...formData, source_type: e.target.value })}
+            >
+              <option value="internal_study">Internal Study</option>
+              <option value="third_party_report">Third-Party Report</option>
+              <option value="internal_monitoring">Internal Monitoring</option>
+              <option value="customer_survey">Customer Survey</option>
+              <option value="regulatory_filing">Regulatory Filing</option>
+            </FormSelect>
+          </FormField>
+
+          <FormField
+            label="Summary"
+            required
+            error={errors.summary}
+            helperText="Brief description of what this evidence establishes"
+          >
+            <FormTextarea
+              id="evidence-summary"
+              rows={3}
+              value={formData.summary}
+              onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+            />
+          </FormField>
+
+          <FormField
+            label="Source URL"
+            error={null}
+            helperText="Optional URL or reference to the evidence source"
+          >
+            <FormInput
+              id="evidence-source-url"
+              placeholder="https://example.com/evidence-source"
+              value={formData.source_url}
+              onChange={(e) => setFormData({ ...formData, source_url: e.target.value })}
+            />
+          </FormField>
+
+          <CardFooter className="justify-between pt-0 mt-6 border-t border-border">
+            <span className="text-xs text-muted-foreground-dark">
+              {saving ? 'Saving…' : ''}
+            </span>
+            <div className="flex gap-3">
+              <Button variant="secondary" size="sm" onClick={onClose} disabled={saving}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" disabled={saving} onClick={handleSubmit}>
+                {saving ? 'Saving…' : 'Add Evidence Source'}
+              </Button>
+            </div>
+          </CardFooter>
+        </form>
+      </div>
     </div>
   )
 }

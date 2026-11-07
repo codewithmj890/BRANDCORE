@@ -44,7 +44,7 @@ export function AppShell({ workspace, backendStatus, children, header }) {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  const sidebarWidth = sidebarCollapsed ? '72px' : '256px'
+  const sidebarWidth = sidebarCollapsed ? '76px' : '232px'
 
   const handleHamburgerClick = () => {
     if (sidebarOpen) {

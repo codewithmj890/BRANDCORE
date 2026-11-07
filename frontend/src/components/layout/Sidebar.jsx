@@ -11,8 +11,8 @@
  */
 import { useEffect, useCallback } from 'react'
 
-const COLLAPSED_WIDTH = 'w-20'   // 72px — circular icon buttons only
-const EXPANDED_WIDTH = 'w-64'    // 256px — circular icons + labels
+const COLLAPSED_WIDTH = 'w-19'   // 76px — circular icon buttons only
+const EXPANDED_WIDTH = 'w-58'    // 232px — circular icons + labels
 
 const ICON_SIZE = 'w-5 h-5'      // 20px icons
 const BTN_SIZE = 'w-11 h-11'     // 44px circular buttons
@@ -121,7 +121,7 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
                     {Icon}
                   </span>
                   {!isCollapsed && (
-                    <span className="text-xs font-medium text-foreground dark:text-foreground-dark">
+                    <span className="text-sm font-medium text-foreground dark:text-foreground-dark">
                       {item.label}
                     </span>
                   )}
@@ -143,7 +143,7 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
           <aside
             id="brandcore-sidebar-mobile"
             className={
-              'fixed inset-y-0 left-0 z-50 w-[256px] max-w-full bg-surface border-r border-border flex flex-col lg:hidden transition-transform duration-300 ease-in-out' +
+              'fixed inset-y-0 left-0 z-50 w-[232px] max-w-full bg-surface border-r border-border flex flex-col lg:hidden transition-transform duration-300 ease-in-out' +
               (isOpen ? ' translate-x-0' : ' -translate-x-full')
             }
             aria-label="Main navigation"

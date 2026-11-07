@@ -3,11 +3,12 @@
  * Root component managing Clerk authentication, workspace resolution,
  * and page routing. No hardcoded workspace IDs.
  */
-import React, { useState } from 'react'
+import React from 'react'
 import { useAuth, useClerk } from '@clerk/react'
 import { AppShell } from './components/layout/AppShell'
 import { Button } from './components/ui/Button'
 import { WorkspaceProvider, useWorkspace } from './context/WorkspaceContext'
+import { NavigationProvider, useNavigation } from './context/NavigationContext'
 import { useHealthMonitor } from './hooks/useHealthMonitor'
 import ApprovedFactsPage from './features/brand-governance/ApprovedFactsPage'
 import EvidenceLibraryPage from './features/brand-governance/EvidenceLibraryPage'
@@ -28,7 +29,7 @@ function AppWithAuth() {
   const { isSignedIn, isLoaded } = useAuth()
   const clerk = useClerk()
   const { orgId, workspaceId, workspaceName } = useWorkspace()
-  const [activePage, setActivePage] = useState('overview')
+  const { activePage, setActivePage } = useNavigation()
   const backendStatus = useHealthMonitor()
 
   // Not loaded yet — show loading shell
@@ -117,7 +118,9 @@ function AppWithAuth() {
 export default function App() {
   return (
     <WorkspaceProvider>
-      <AppWithAuth />
+      <NavigationProvider>
+        <AppWithAuth />
+      </NavigationProvider>
     </WorkspaceProvider>
   )
 }

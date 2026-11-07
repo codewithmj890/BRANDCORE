@@ -249,4 +249,7 @@ export const api = {
 
   getEvidenceItem: (workspaceId, evidenceId) =>
     protectedRequest('GET', `/workspaces/${workspaceId}/evidence/${evidenceId}`),
+
+  createEvidence: (workspaceId, evidence) =>
+    protectedRequest('POST', `/workspaces/${workspaceId}/evidence`, evidence),
 }

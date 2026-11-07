@@ -16,7 +16,7 @@ import {
   FormField, FormInput, FormSelect,
 } from '@/components/ui'
 import { PageHeader } from '@/components/layout'
-import { DEMO_RELEASES, DEMO_STALE_IMPACT } from '../brand-governance/__mocks__/demo-data'
+import { DEMO_RELEASES } from '../brand-governance/__mocks__/demo-data'
 
 function formatDate(isoString) {
   if (!isoString) return '—'
@@ -89,10 +89,24 @@ export default function ReleaseGovernancePage() {
     revoked: releases.filter((r) => r.status === 'REVOKED').length,
   }
 
-  const openStaleImpact = (releaseId) => {
+  const [staleImpact, setStaleImpact] = useState(null)
+  const [staleImpactLoading, setStaleImpactLoading] = useState(false)
+  const [staleImpactError, setStaleImpactError] = useState(null)
+
+  const openStaleImpact = async (releaseId) => {
     const release = releases.find((r) => r.id === releaseId)
-    if (release && release.status === 'STALE') {
-      setSelectedRelease({ ...DEMO_STALE_IMPACT, release_id: releaseId })
+    if (!release || release.status !== 'STALE') return
+    setStaleImpactLoading(true)
+    setStaleImpactError(null)
+    try {
+      const data = await api.getStaleImpact(workspaceId, releaseId)
+      setStaleImpact({ ...data, release_id: releaseId })
+      setSelectedRelease(release)
+    } catch (err) {
+      setStaleImpactError(err.message || 'Failed to load stale impact.')
+      setSelectedRelease(release)
+    } finally {
+      setStaleImpactLoading(false)
     }
   }
 
@@ -265,6 +279,13 @@ export default function ReleaseGovernancePage() {
           release={selectedRelease}
           onClose={() => setSelectedRelease(null)}
           demoMode={demoMode}
+          staleImpact={staleImpact}
+          staleImpactLoading={staleImpactLoading}
+          staleImpactError={staleImpactError}
+          onRevalidate={() => {
+            fetchReleases()
+            setSelectedRelease(null)
+          }}
         />
       )}
     </div>
@@ -276,7 +297,7 @@ function searchPlaceholder(filter) {
   return labels[filter] || 'Try adjusting your filters.'
 }
 
-function ReleasePassportDrawer({ release, onClose, demoMode }) {
+function ReleasePassportDrawer({ release, onClose, demoMode, staleImpact, staleImpactLoading, staleImpactError, onRevalidate }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
@@ -334,40 +355,59 @@ function ReleasePassportDrawer({ release, onClose, demoMode }) {
                 </div>
               </CardHeader>
               <CardBody>
-                <p className="text-sm text-foreground mb-3">
-                  This release is <span className="font-semibold text-amber-700">STALE</span> because an underlying
-                  approved fact has changed since approval. The content should be revalidated before further use.
-                </p>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Reason</p>
-                    <p className="text-sm text-foreground">{release.stale_reason || 'Dependent fact was updated'}</p>
+                {staleImpactLoading && (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <SkeletonRow className="mb-4" />
+                    <Skeleton width="60%" height="16px" />
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Stale since</p>
-                    <p className="text-sm text-foreground">{formatDateTime(release.stale_since)}</p>
-                  </div>
-                  {release.changed_facts && release.changed_facts.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Changed facts</p>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground mt-1 space-y-1">
-                        {release.changed_facts.map((cf, i) => (
-                          <li key={i}>
-                            Fact <span className="font-mono">{cf.fact_id}</span>: version{' '}
-                            <span className="font-medium">{cf.old_version}</span> →{' '}
-                            <span className="font-medium">{cf.new_version}</span>
-                            {cf.change ? ` — ${cf.change}` : ''}
-                          </li>
-                        ))}
-                      </ul>
+                )}
+                {staleImpactError && (
+                  <p className="text-sm text-red-700 dark:text-red-400">{staleImpactError}</p>
+                )}
+                {staleImpact && !staleImpactLoading && !staleImpactError && (
+                  <>
+                    <p className="text-sm text-foreground mb-3">
+                      This release is <span className="font-semibold text-amber-700">STALE</span> because an underlying
+                      approved fact has changed since approval. The content should be revalidated before further use.
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Reason</p>
+                        <p className="text-sm text-foreground">{staleImpact.stale_reason || 'Dependent fact was updated'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Stale since</p>
+                        <p className="text-sm text-foreground">{formatDateTime(staleImpact.stale_since)}</p>
+                      </div>
+                      {staleImpact.changed_facts && staleImpact.changed_facts.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Changed facts</p>
+                          <ul className="list-disc list-inside text-sm text-muted-foreground mt-1 space-y-1">
+                            {staleImpact.changed_facts.map((cf, i) => (
+                              <li key={i}>
+                                Fact <span className="font-mono">{cf.fact_id}</span>: version{' '}
+                                <span className="font-medium">{cf.old_version}</span> →{' '}
+                                <span className="font-medium">{cf.new_version}</span>
+                                {cf.change ? ` — ${cf.change}` : ''}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <CardFooter className="pt-4">
-                  <Button variant="danger" size="sm" onClick={() => {}}>
-                    Request Revalidation
-                  </Button>
-                </CardFooter>
+                    <CardFooter className="pt-4">
+                      <Button variant="danger" size="sm" onClick={onRevalidate}>
+                        Request Revalidation
+                      </Button>
+                    </CardFooter>
+                  </>
+                )}
+                {!staleImpact && !staleImpactLoading && !staleImpactError && (
+                  <p className="text-sm text-foreground mb-3">
+                    This release is <span className="font-semibold text-amber-700">STALE</span> because an underlying
+                    approved fact has changed since approval. The content should be revalidated before further use.
+                  </p>
+                )}
               </CardBody>
             </Card>
           )}

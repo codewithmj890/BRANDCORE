@@ -8,7 +8,7 @@
  * default; mock mode requires explicit VITE_USE_MOCK_API=true. Auth errors
  * (401/403) are never silently replaced with mock data.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { api } from '@/services/api'
 import {
@@ -41,6 +41,11 @@ export default function ContentReviewPage() {
   const [error, setError] = useState(null)
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [versionLoading, setVersionLoading] = useState(false)
+  const submissionFormRef = useRef(null)
+
+  const scrollToSubmissionForm = useCallback(() => {
+    submissionFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
 
   const fetchContentVersions = useCallback(async () => {
     if (!workspaceId || !contentItemId || authStatus !== 'ready') {
@@ -166,7 +171,10 @@ export default function ContentReviewPage() {
         description="Submit content for review, examine AI-extracted claims and verification findings, and record review decisions."
         breadcrumbs={[{ label: 'Content Review', href: '#' }]}
         actions={[
-          <Button key="submit" variant="primary" onClick={() => setSubmission(null)}>
+          <Button key="submit" variant="primary" onClick={() => {
+            setSubmission(null)
+            scrollToSubmissionForm()
+          }}>
             Submit Content
           </Button>,
         ]}
@@ -191,7 +199,7 @@ export default function ContentReviewPage() {
       {!error && !submission && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <Card>
+            <Card ref={submissionFormRef}>
               <CardHeader>
                 <CardTitle>Submit Content</CardTitle>
               </CardHeader>
@@ -210,7 +218,10 @@ export default function ContentReviewPage() {
                 title="No content submitted yet"
                 description="Submit your first content item to begin the review workflow. Once submitted, content becomes an immutable version."
                 action="Submit your first content"
-                onAction={() => setSubmission(null)}
+                onAction={() => {
+                  setSubmission(null)
+                  scrollToSubmissionForm()
+                }}
               />
             </div>
           </div>

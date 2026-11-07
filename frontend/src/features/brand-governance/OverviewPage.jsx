@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useWorkspace } from '@/context/WorkspaceContext'
+import { useNavigation } from '@/context/NavigationContext'
 import { api } from '@/services/api'
 import {
   Card, CardHeader, CardTitle, CardBody,
@@ -21,6 +22,7 @@ function formatDate(isoString) {
 
 export default function OverviewPage() {
   const { workspaceId, workspaceName, authStatus } = useWorkspace()
+  const { setActivePage } = useNavigation()
   const [facts, setFacts] = useState([])
   const [releases, setReleases] = useState([])
   const [contentVersions, setContentVersions] = useState([])
@@ -114,7 +116,7 @@ export default function OverviewPage() {
         description={`Brand governance for ${workspaceName || 'your workspace'}.`}
         breadcrumbs={[{ label: 'Overview', href: '#' }]}
         actions={[
-          <Button key="submit" variant="accent" onClick={() => { /* handled by parent */ }}>
+          <Button key="submit" variant="accent" onClick={() => setActivePage('content')}>
             Submit Content
           </Button>,
         ]}
@@ -196,7 +198,7 @@ export default function OverviewPage() {
                 approved fact has changed since approval. Revalidate before further use.
               </p>
               <div className="flex gap-3">
-                <Button variant="primary" size="sm" onClick={() => { /* navigate to releases */ }}>
+                <Button variant="primary" size="sm" onClick={() => setActivePage('releases')}>
                   View Releases
                 </Button>
                 <Button variant="ghost" size="sm">
@@ -218,7 +220,7 @@ export default function OverviewPage() {
                 evidence references. Add evidence to strengthen claim validity.
               </p>
               <div className="flex gap-3">
-                <Button variant="primary" size="sm" onClick={() => { /* navigate to facts */ }}>
+                <Button variant="primary" size="sm" onClick={() => setActivePage('facts')}>
                   View Facts
                 </Button>
                 <Button variant="ghost" size="sm">
@@ -238,13 +240,13 @@ export default function OverviewPage() {
           </CardHeader>
           <CardBody>
             <div className="space-y-3">
-              <Button variant="primary" size="sm" className="w-full" onClick={() => { /* submit content */ }}>
+              <Button variant="primary" size="sm" className="w-full" onClick={() => setActivePage('content')}>
                 Submit Content for Review
               </Button>
-              <Button variant="secondary" size="sm" className="w-full" onClick={() => { /* create fact */ }}>
+              <Button variant="secondary" size="sm" className="w-full" onClick={() => setActivePage('facts')}>
                 Create Approved Fact
               </Button>
-              <Button variant="secondary" size="sm" className="w-full" onClick={() => { /* add evidence */ }}>
+              <Button variant="secondary" size="sm" className="w-full" onClick={() => setActivePage('evidence')}>
                 Add Evidence Source
               </Button>
             </div>
