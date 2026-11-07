@@ -27,7 +27,8 @@
   // Workers Static Assets — serves the Vite production build
   // https://developers.cloudflare.com/workers/static-assets/
   "assets": {
-    "directory": "./frontend/dist"
+    "directory": "./frontend/dist",
+    "not_found_handling": "single-page-application"
   },
 
   // D1 relational database binding
@@ -110,7 +111,28 @@
     "production": {
       "name": "brandcore-worker",
       "vars": {
-        "BRANDCORE_ENV": "production"
+        "BRANDCORE_ENV": "production",
+        "CLERK_ISSUER_URL": "<CLERK_ISSUER_URL>"
+      },
+      // Production environment must redeclare all bindings — Wrangler does not
+      // inherit top-level bindings into named environments.
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "brandcore-db",
+          "database_id": "<D1_DATABASE_ID>",
+          "migrations_dir": "database/migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "ASSETS",
+          "bucket_name": "brandcore-assets"
+        }
+      ],
+      "ai": {
+        "binding": "AI",
+        "remote": true
       }
     }
   }
