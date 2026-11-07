@@ -3,12 +3,12 @@
  * Root component managing Clerk authentication, workspace resolution,
  * and page routing. No hardcoded workspace IDs.
  */
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useAuth, useClerk } from '@clerk/react'
-import { api, onBackendStatusChange } from './services/api.js'
 import { AppShell } from './components/layout/AppShell'
 import { Button } from './components/ui/Button'
 import { WorkspaceProvider, useWorkspace } from './context/WorkspaceContext'
+import { useHealthMonitor } from './hooks/useHealthMonitor'
 import ApprovedFactsPage from './features/brand-governance/ApprovedFactsPage'
 import EvidenceLibraryPage from './features/brand-governance/EvidenceLibraryPage'
 import OverviewPage from './features/brand-governance/OverviewPage'
@@ -24,62 +24,12 @@ const PAGE_COMPONENTS = {
   evidence: EvidenceLibraryPage,
 }
 
-// Health check interval: 30 seconds
-const HEALTH_INTERVAL_MS = 30000
-
 function AppWithAuth() {
   const { isSignedIn, isLoaded } = useAuth()
   const clerk = useClerk()
   const { orgId, workspaceId, workspaceName } = useWorkspace()
   const [activePage, setActivePage] = useState('overview')
-  const [backendStatus, setBackendStatus] = useState('checking')
-
-  // Periodic health checking — only when signed in
-  useEffect(() => {
-    if (!isSignedIn) {
-      setBackendStatus('checking')
-      return
-    }
-
-    let cancelled = false
-    let timer
-
-    async function checkHealth() {
-      if (cancelled) return
-      try {
-        await api.health()
-        if (!cancelled) setBackendStatus('connected')
-      } catch (err) {
-        if (cancelled) return
-        // 401/403 are auth errors, not backend offline
-        if (err.status === 401 || err.status === 403) {
-          setBackendStatus('connected')
-        } else {
-          setBackendStatus('offline')
-        }
-      }
-    }
-
-    checkHealth()
-    timer = setInterval(checkHealth, HEALTH_INTERVAL_MS)
-
-    const unsubscribe = onBackendStatusChange((status) => {
-      // Only update from API request listeners if not auth-related
-      if (status === 'connecting' && backendStatus !== 'offline') {
-        setBackendStatus('checking')
-      } else if (status === 'connected') {
-        setBackendStatus('connected')
-      } else if (status === 'offline') {
-        setBackendStatus('offline')
-      }
-    })
-
-    return () => {
-      cancelled = true
-      clearInterval(timer)
-      unsubscribe()
-    }
-  }, [isSignedIn, backendStatus])
+  const backendStatus = useHealthMonitor()
 
   // Not loaded yet — show loading shell
   if (!isLoaded) {
