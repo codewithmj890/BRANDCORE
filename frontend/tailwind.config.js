@@ -8,67 +8,44 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Canvas and surfaces
-        canvas: {
-          DEFAULT: '#F5F7FA',
-          dark: '#0A0F17',
-        },
-        surface: {
-          DEFAULT: '#FFFFFF',
-          dark: '#111827',
-        },
-        'surface-muted': {
-          DEFAULT: '#F1F5F9',
-          dark: '#1E293B',
-        },
-        'surface-elevated': {
-          DEFAULT: '#FFFFFF',
-          dark: '#1F2937',
-        },
-        // Brand text (navy in light, neutral in dark)
-        brand: {
-          950: '#142235',
-          dark: '#F8FAFC',
-        },
-        // Slate (secondary text and borders)
-        slate: {
-          700: '#42556B',
-          600: '#5C6D80',
-          500: '#718197',
-          dark: '#94A3B8',
-        },
-        border: {
-          DEFAULT: '#DCE3EA',
-          dark: '#334155',
-        },
-        // Forest green (primary action, success, approved)
+        // Design system tokens (CSS variables)
+        canvas: 'var(--color-canvas)',
+        surface: 'var(--color-surface)',
+        'surface-muted': 'var(--color-surface-muted)',
+        'surface-elevated': 'var(--color-surface-elevated)',
+        primary: 'var(--color-primary)',
+        'on-primary': 'var(--color-on-primary)',
+        secondary: 'var(--color-secondary)',
+        'on-secondary': 'var(--color-on-secondary)',
+        accent: 'var(--color-accent)',
+        'on-accent': 'var(--color-on-accent)',
+        foreground: 'var(--color-foreground)',
+        'foreground-dark': 'var(--color-foreground-dark)',
+        'muted-foreground': 'var(--color-muted-foreground)',
+        'muted-foreground-dark': 'var(--color-muted-foreground-dark)',
+        border: 'var(--color-border)',
+        destructive: 'var(--color-destructive)',
+        'on-destructive': 'var(--color-on-destructive)',
+        ring: 'var(--color-ring)',
+        // Semantic status (kept for status badges, alerts)
         green: {
           700: '#15803d',
           100: '#DCFCE7',
           dark: '#34D399',
         },
-        // Amber (stale, warning)
         amber: {
           700: '#986000',
           100: '#FFF1CC',
           dark: '#F0C674',
         },
-        // Red (error, rejected, invalid)
         red: {
           700: '#B42318',
           100: '#FEE4E2',
           dark: '#E87A6E',
         },
-        // Text
-        'text-primary': '#162638',
-        'text-primary-dark': '#F8FAFC',
-        'text-secondary': '#5C6D80',
-        'text-secondary-dark': '#94A3B8',
-        // Focus ring
-        focus: '#15803d',
       },
       fontFamily: {
-        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        sans: ['var(--font-sans)'],
       },
       fontSize: {
         'xs': ['12px', { lineHeight: '16px', fontWeight: '400' }],
@@ -83,21 +60,24 @@ export default {
         2: '8px',
         3: '12px',
         4: '16px',
+        5: '20px',
         6: '24px',
         8: '32px',
+        10: '40px',
+        12: '48px',
       },
       borderRadius: {
-        sm: '6px',
-        DEFAULT: '8px',
-        md: '10px',
-        lg: '12px',
-        full: '9999px',
+        sm: 'var(--radius-sm)',
+        DEFAULT: 'var(--radius)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        full: 'var(--radius-full)',
       },
       boxShadow: {
-        sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-        DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        sm: 'var(--shadow-sm)',
+        DEFAULT: 'var(--shadow)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',

@@ -1,33 +1,29 @@
 /**
  * BRANDCORE — Sidebar Navigation
- * Collapsible sidebar with active state indicators and user section.
+ * Navigation sidebar rendered as a CSS Grid column on desktop,
+ * and as an overlay drawer on mobile controlled by the topbar hamburger.
  *
  * Desktop:
  * - Expanded: full width with icons + text labels
- * - Collapsed: compact icon-only sidebar with tooltips
- * - Collapse preference persisted in localStorage (via AppShell)
- *
+ * - Collapsed: compact icon-only navigation with accessible tooltips
  * Mobile:
- * - Hidden; overlay drawer controlled by AppShell
+ * - Hidden from grid; overlay drawer controlled by topbar hamburger
  * - Escape-to-close, backdrop click to close, body scroll lock
  */
 import { useEffect, useCallback } from 'react'
 
-const COLLAPSED_WIDTH = 'w-20'   // 80px — icon only
+const COLLAPSED_WIDTH = 'w-20'   // 72px — icon only
 const EXPANDED_WIDTH = 'w-64'    // 256px — icons + labels
 
 const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', icon: 'O' },
   { id: 'facts', label: 'Approved Facts', icon: 'F' },
   { id: 'content', label: 'Content Review', icon: 'C' },
   { id: 'releases', label: 'Releases', icon: 'R' },
   { id: 'evidence', label: 'Evidence Library', icon: 'E' },
 ]
 
-export function Sidebar({ activeItem, onItemClick, isCollapsed, onCollapseChange, isOpen, onClose }) {
-  const handleToggleCollapse = useCallback(() => {
-    onCollapseChange((prev) => !prev)
-  }, [onCollapseChange])
-
+export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose, className }) {
   const handleCloseMobile = useCallback(() => {
     onClose?.()
   }, [onClose])
@@ -47,22 +43,22 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, onCollapseChange
   }, [isOpen, handleCloseMobile])
 
   const sidebarClasses = [
-    'fixed inset-y-0 left-0 z-40 flex flex-col transition-all duration-300 ease-in-out',
-    'border-r border-border bg-surface dark:bg-surface-dark',
+    'flex flex-col transition-all duration-300 ease-in-out',
+    'border-r border-border bg-surface',
     isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
-    'transform',
+    'min-w-0',
   ].join(' ')
 
   return (
     <>
-      {/* Desktop sidebar (fixed, always present on md+) */}
+      {/* Desktop sidebar — CSS Grid column */}
       <aside
-        className={['hidden md:flex', sidebarClasses].join(' ')}
+        className={['hidden md:flex', sidebarClasses, className || ''].join(' ').trim()}
         id="brandcore-sidebar"
         aria-label="Main navigation"
       >
         <div className="flex-1 overflow-y-auto">
-          <nav className="px-2 py-4">
+          <nav className="px-3 py-5">
             {NAV_ITEMS.map((item) => {
               const isActive = activeItem === item.id
               return (
@@ -74,56 +70,27 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, onCollapseChange
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={isCollapsed ? item.label : undefined}
                   className={
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ' +
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ' +
                     (isActive
-                      ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-700/20 dark:border-green-700/30'
-                      : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary')
+                      ? 'bg-accent/10 dark:bg-accent/10 border border-accent/20 text-accent dark:text-accent'
+                      : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground')
                   }
                 >
                   <span
                     className={
-                      'w-6 h-6 rounded flex items-center justify-center font-bold text-xs ' +
+                      'w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs transition-all ' +
                       (isActive
-                        ? 'bg-green-700 dark:bg-green-600 text-white'
-                        : 'bg-surface-muted text-text-secondary border border-border')
+                        ? 'bg-accent text-on-accent'
+                        : 'bg-surface-muted text-muted-foreground border border-border')
                     }
                   >
                     {item.icon}
                   </span>
-                  {!isCollapsed && <span>{item.label}</span>}
+                  {!isCollapsed && <span className="text-foreground dark:text-foreground-dark">{item.label}</span>}
                 </button>
               )
             })}
           </nav>
-        </div>
-
-        <div className="border-t border-border p-2 bg-surface/95 backdrop-blur backdrop-blur-md">
-          <button
-            onClick={handleToggleCollapse}
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-controls="brandcore-sidebar"
-            aria-expanded={!isCollapsed}
-            className="w-full flex items-center justify-center px-2 py-2 rounded-md text-text-secondary hover:bg-surface-muted hover:text-text-primary focus-ring transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="w-5 h-5"
-            >
-              {isCollapsed
-                ? <line x1="18" y1="12" x2="6" y2="12" />
-                : <line x1="6" y1="12" x2="18" y2="12" />}
-            </svg>
-            {!isCollapsed && (
-              <span className="ml-2 text-xs text-text-secondary">Collapse</span>
-            )}
-            {isCollapsed && (
-              <span className="ml-2 text-xs text-text-secondary">Expand</span>
-            )}
-          </button>
         </div>
       </aside>
 
@@ -137,7 +104,10 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, onCollapseChange
           />
           <aside
             id="brandcore-sidebar-mobile"
-            className="fixed inset-y-0 left-0 z-50 w-64 bg-surface border-r border-border flex flex-col md:hidden transform transition-transform duration-300 ease-in-out"
+            className={
+              'fixed inset-y-0 left-0 z-50 w-[256px] max-w-full bg-surface border-r border-border flex flex-col md:hidden transition-transform duration-300 ease-in-out' +
+              (isOpen ? ' translate-x-0' : ' -translate-x-full')
+            }
             aria-label="Main navigation"
           >
             <div className="flex-1 overflow-y-auto">
@@ -155,30 +125,30 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, onCollapseChange
                       className={
                         'w-full flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-medium transition-colors ' +
                         (isActive
-                          ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                          : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary')
+                          ? 'bg-accent/10 dark:bg-accent/10 text-accent dark:text-accent'
+                          : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground')
                       }
                     >
                       <span
                         className={
-                          'w-7 h-7 rounded flex items-center justify-center font-bold text-sm ' +
+                          'w-7 h-7 rounded-md flex items-center justify-center font-bold text-sm transition-colors ' +
                           (isActive
-                            ? 'bg-green-700 dark:bg-green-600 text-white'
-                            : 'bg-surface-muted text-text-secondary border border-border')
+                            ? 'bg-accent text-on-accent'
+                            : 'bg-surface-muted text-muted-foreground border border-border')
                         }
                       >
                         {item.icon}
                       </span>
-                      <span>{item.label}</span>
+                      <span className="text-foreground dark:text-foreground-dark">{item.label}</span>
                     </button>
                   )
                 })}
               </nav>
             </div>
-            <div className="border-t border-border p-4 bg-surface/95 backdrop-blur backdrop-blur-md">
+            <div className="border-t border-border p-4 bg-surface/90 backdrop-blur backdrop-blur-md">
               <button
                 onClick={handleCloseMobile}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-text-secondary hover:bg-surface-muted hover:text-text-primary focus-ring"
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-surface-muted hover:text-foreground focus-ring"
               >
                 <span>Close navigation</span>
                 <svg

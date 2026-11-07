@@ -8,14 +8,14 @@ export function DataTable({ columns, data, rowKey = 'id', onRowClick, className 
   }
 
   return (
-    <div className={'overflow-x-auto border border-border rounded-lg ' + className}>
+    <div className={'overflow-x-auto border border-border rounded-lg card shadow-sm ' + className}>
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="bg-surface-muted text-xs font-semibold text-text-secondary uppercase tracking-wider">
+          <tr className="bg-surface-muted text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="px-4 py-3 border-b border-border font-medium"
+                className="px-4 py-3 border-b border-border font-medium text-muted-foreground-dark"
                 scope="col"
               >
                 {col.label}
@@ -39,7 +39,7 @@ export function DataTable({ columns, data, rowKey = 'id', onRowClick, className 
               }}
             >
               {columns.map((col) => (
-                <td key={col.key} className="px-4 py-3 text-sm text-text-primary">
+                <td key={col.key} className="px-4 py-3 text-sm text-foreground dark:text-foreground-dark">
                   {typeof col.render === 'function' ? col.render(row) : row[col.key]}
                 </td>
               ))}

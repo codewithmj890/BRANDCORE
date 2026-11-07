@@ -107,6 +107,8 @@ export function WorkspaceProvider({ children }) {
     orgId,
     workspaceId,
     workspaceName,
+    setWorkspaceId,
+    setWorkspaceName,
     authStatus,
     getToken,
   }

@@ -39,7 +39,7 @@ function AppWithAuth() {
         backendStatus={backendStatus}
         header={{ activeItem: activePage, onNavChange: setActivePage }}
       >
-        <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground-dark">
           Signing in…
         </div>
       </AppShell>
@@ -54,8 +54,8 @@ function AppWithAuth() {
         backendStatus={backendStatus}
         header={{ activeItem: activePage, onNavChange: setActivePage }}
       >
-        <div className="flex flex-col items-center justify-center h-64 text-slate-500">
-          <p className="mb-4 text-text-primary">Sign in to continue</p>
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground-dark">
+          <p className="mb-4 text-foreground">Sign in to continue</p>
             <div className="flex gap-3">
               <Button variant="primary" onClick={() => { if (!isSignedIn) clerk.openSignIn() }}>
                 Sign in
@@ -77,9 +77,9 @@ function AppWithAuth() {
         backendStatus={backendStatus}
         header={{ activeItem: activePage, onNavChange: setActivePage }}
       >
-        <div className="flex flex-col items-center justify-center h-64 text-slate-500">
-          <p className="mb-4 text-text-primary">No active organization</p>
-          <p className="text-sm text-slate-500 mb-4">
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground-dark">
+          <p className="mb-4 text-foreground">No active organization</p>
+          <p className="text-sm text-muted-foreground-dark mb-4">
             Please select an organization from the account menu to continue.
           </p>
         </div>

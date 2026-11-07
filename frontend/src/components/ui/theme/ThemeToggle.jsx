@@ -48,7 +48,7 @@ export function ThemeToggle() {
         inline-flex items-center justify-center
         w-9 h-9 rounded-full
         bg-surface border border-border
-        text-text-secondary hover:text-text-primary
+        text-muted-foreground hover:text-foreground
         hover:bg-surface-muted
         focus-ring
         transition-colors

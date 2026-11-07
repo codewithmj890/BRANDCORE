@@ -156,19 +156,19 @@ export default function EvidenceLibraryPage() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Total evidence</div>
-            <div className="text-2xl font-bold text-text-primary">{summary.total}</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Total evidence</div>
+            <div className="text-2xl font-bold text-foreground">{summary.total}</div>
           </Card>
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Active</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Active</div>
             <div className="text-2xl font-bold text-green-700">{summary.active}</div>
           </Card>
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Linked to facts</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Linked to facts</div>
             <div className="text-2xl font-bold text-green-700">{summary.linked}</div>
           </Card>
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Unlinked</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Unlinked</div>
             <div className="text-2xl font-bold text-amber-700">{summary.unlinked}</div>
           </Card>
         </div>
@@ -199,7 +199,7 @@ export default function EvidenceLibraryPage() {
         <div className="overflow-x-auto border border-border rounded-lg">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface-muted text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              <tr className="bg-surface-muted text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <th className="px-4 py-3 border-b border-border" scope="col">Title</th>
                 <th className="px-4 py-3 border-b border-border" scope="col">Type</th>
                 <th className="px-4 py-3 border-b border-border" scope="col">Status</th>
@@ -219,13 +219,13 @@ export default function EvidenceLibraryPage() {
                 </tr>
               ) : (
                 filteredEvidence.map((item) => (
-                  <tr key={item.id} className="bg-surface dark:bg-surface-dark hover:bg-surface-muted transition-colors group">
+                  <tr key={item.id} className="bg-surface hover:bg-surface-muted transition-colors group">
                     <td className="px-4 py-3">
-                      <div className="text-sm text-text-primary font-medium">{item.title}</div>
-                      <div className="text-xs text-slate-500 mt-1 truncate max-w-xs">{item.source_url || '—'}</div>
+                      <div className="text-sm text-foreground font-medium">{item.title}</div>
+                      <div className="text-xs text-muted-foreground-dark mt-1 truncate max-w-xs">{item.source_url || '—'}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-muted text-xs text-text-secondary">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-muted text-xs text-muted-foreground">
                         {SOURCE_TYPE_LABELS[item.source_type] || item.source_type}
                       </span>
                     </td>
@@ -233,17 +233,17 @@ export default function EvidenceLibraryPage() {
                       <StatusBadge status={item.status} size="sm" />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-text-primary">
+                      <div className="text-sm text-foreground">
                         {item.linked_fact_ids?.length || 0}
                       </div>
                       {item.linked_fact_ids && item.linked_fact_ids.length > 0 && (
-                        <span className="text-xs text-slate-500 block mt-0.5">
+                        <span className="text-xs text-muted-foreground-dark block mt-0.5">
                           {item.linked_fact_ids.map((fid) => fid.slice(-3)).join(', ')}
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className="text-xs text-text-secondary">{formatDate(item.created_at)}</span>
+                      <span className="text-xs text-muted-foreground">{formatDate(item.created_at)}</span>
                     </td>
                   </tr>
                 ))

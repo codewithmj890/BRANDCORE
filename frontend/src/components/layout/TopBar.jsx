@@ -1,49 +1,132 @@
 /**
  * BRANDCORE — Top Bar
- * Application header with brand, workspace context, backend status, theme toggle,
- * and user controls. Uses Clerk for authentication.
+ * Application header with hamburger menu, brand, workspace context,
+ * backend status, theme toggle, and user controls. Uses Clerk for authentication.
  */
 import { UserButton, OrganizationSwitcher, useAuth } from '@clerk/react'
 import { ThemeToggle } from '../ui/theme/ThemeToggle'
 
-export function TopBar({ workspace, backendStatus, onSidebarToggle, isSidebarOpen }) {
+export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerToggle, isDrawerOpen, isSidebarCollapsed }) {
   const { isSignedIn } = useAuth()
+
+  const statusColors = {
+    connected: 'bg-success text-white',
+    connecting: 'bg-warning text-white',
+    offline: 'bg-destructive text-white',
+  }
+
+  const statusLabels = {
+    connected: 'Backend connected',
+    connecting: 'Connecting…',
+    offline: 'Backend offline',
+  }
+
+  const MENU_ICON = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+    >
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  )
+
+  const CLOSE_ICON = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
 
   return (
     <header
-      className="sticky top-0 z-50 bg-surface dark:bg-surface-dark/95 backdrop-blur backdrop-blur-md border-b border-border"
+      className="sticky top-0 z-50 border-b border-border bg-surface"
     >
-      <div className="flex items-center justify-between px-6 py-3">
+      <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-green-700 flex items-center justify-center text-white font-bold">
-              B
-            </div>
-            <span className="font-bold text-lg text-brand-950 dark:text-brand-dark tracking-tight">
-              BRANDCORE
-            </span>
-          </div>
+          {/* Hamburger menu — centralized navigation control */}
+          <button
+            type="button"
+            onClick={onDrawerToggle}
+            aria-label="Toggle navigation menu"
+            aria-expanded={isDrawerOpen}
+            className="
+              inline-flex items-center justify-center
+              w-9 h-9 rounded-lg
+              bg-surface border border-border
+              text-muted-foreground hover:text-foreground hover:bg-surface-muted
+              focus-ring
+              transition-colors
+              md:hidden
+            "
+          >
+            <span className="sr-only">Toggle navigation</span>
+            {isDrawerOpen ? CLOSE_ICON : MENU_ICON}
+          </button>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-muted dark:bg-surface-muted-dark border border-border text-xs font-medium text-text-secondary">
-            <span className="w-2 h-2 rounded-full bg-green-700" />
-            <span className="hidden sm:inline">Workspace: </span>
-            <span>{workspace?.name || '—'}</span>
+          {/* Desktop sidebar collapse toggle — same hamburger button, different behavior */}
+          {isSignedIn && (
+            <button
+              type="button"
+              onClick={onSidebarToggle}
+              aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-expanded={!isSidebarCollapsed}
+              className="
+                inline-flex items-center justify-center
+                w-9 h-9 rounded-lg
+                bg-surface border border-border
+                text-muted-foreground hover:text-foreground hover:bg-surface-muted
+                focus-ring
+                transition-colors
+                hidden md:block
+              "
+            >
+              <span className="sr-only">Toggle sidebar</span>
+              {isSidebarCollapsed ? MENU_ICON : CLOSE_ICON}
+            </button>
+          )}
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center text-on-accent font-bold text-lg">
+                B
+              </div>
+              <span className="font-bold text-lg text-foreground dark:text-foreground-dark tracking-tight">
+                BRANDCORE
+              </span>
+            </div>
+
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-muted dark:bg-surface-muted-dark border border-border text-xs font-medium text-muted-foreground">
+              <span className="w-2 h-2 rounded-full bg-success" />
+              <span className="text-muted-foreground-dark">Workspace: </span>
+              <span className="text-foreground dark:text-foreground-dark">{workspace?.name || '—'}</span>
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-medium">
-            <span className="w-2 h-2 rounded-full">
-              {backendStatus === 'connected' ? (
-                <span className="bg-green-700" />
-              ) : backendStatus === 'connecting' ? (
-                <span className="bg-amber-700 animate-pulse" />
-              ) : (
-                <span className="bg-red-700" />
-              )}
-            </span>
-            <span className="text-text-secondary">
-              {backendStatus === 'connected' ? 'Backend connected' : backendStatus === 'connecting' ? 'Connecting…' : 'Backend offline'}
+          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-xs font-medium">
+            <span
+              className={`w-2 h-2 rounded-full ${statusColors[backendStatus] || statusColors.offline}`}
+            />
+            <span className="text-muted-foreground-dark">
+              {statusLabels[backendStatus] || statusLabels.offline}
             </span>
           </div>
 
@@ -54,7 +137,7 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, isSidebarOpe
               <OrganizationSwitcher
                 appearance={{
                   elements: {
-                    organizationSwitcherTrigger: 'bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-surface-muted focus:ring-focus focus:ring-2 rounded-md px-2 py-1',
+                    organizationSwitcherTrigger: 'bg-surface border border-border text-foreground dark:text-foreground-dark hover:text-accent hover:bg-surface-muted focus-ring-ring focus:ring-2 rounded-md px-2 py-1',
                   },
                 }}
               />
@@ -62,10 +145,10 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, isSidebarOpe
                 afterSignOutUrl="/"
                 appearance={{
                   elements: {
-                    userButtonTrigger: 'bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-surface-muted focus:ring-focus focus:ring-2 rounded-md px-2 py-1',
+                    userButtonTrigger: 'bg-surface border border-border text-foreground dark:text-foreground-dark hover:text-accent hover:bg-surface-muted focus-ring-ring focus:ring-2 rounded-md px-2 py-1',
                     userButtonMenu: 'bg-surface border border-border shadow-lg',
-                    userButtonMenuItem: 'text-text-secondary hover:text-green-700 dark:hover:text-green-400 hover:bg-green-50/30 dark:hover:bg-green-900/20',
-                    userButtonMenuButton: 'text-text-secondary hover:text-green-700',
+                    userButtonMenuItem: 'text-muted-foreground hover:text-accent dark:hover:text-accent hover:bg-accent/10 dark:hover:bg-accent/10',
+                    userButtonMenuButton: 'text-muted-foreground hover:text-accent',
                   },
                 }}
               />

@@ -8,19 +8,19 @@ export function FormField({ label, name, error, required, children, helperText, 
     <div className={'mb-4 ' + className}>
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-text-primary mb-1"
+        className="block text-sm font-medium text-foreground dark:text-foreground-dark mb-1"
       >
-        {label} {required && <span className="text-red-700 dark:text-red-400 ml-1">*</span>}
+        {label} {required && <span className="text-destructive dark:text-destructive ml-1">*</span>}
       </label>
       <div className="relative">
         {children}
         {error && (
-          <p className="mt-1 text-xs text-red-700 dark:text-red-400" role="alert">
+          <p className="mt-1 text-xs text-destructive dark:text-destructive" role="alert">
             {error}
           </p>
         )}
         {helperText && !error && (
-          <p className="mt-1 text-xs text-slate-500">{helperText}</p>
+          <p className="mt-1 text-xs text-muted-foreground-dark">{helperText}</p>
         )}
       </div>
     </div>
@@ -32,11 +32,7 @@ export function FormInput({ id, className = '', ...props }) {
     <input
       id={id}
       className={
-        'block w-full rounded-md border border-border bg-surface dark:bg-surface-dark px-3 py-2 text-sm text-text-primary dark:text-text-primary-dark ' +
-        'placeholder:text-slate-400 dark:placeholder:text-slate-500 ' +
-        'focus:ring-2 focus:ring-focus focus:border-transparent ' +
-        'transition-colors disabled:opacity-50 disabled:pointer-events-none ' +
-        className
+        'form-input ' + className
       }
       {...props}
     />
@@ -49,11 +45,7 @@ export function FormTextarea({ id, className = '', rows = 4, ...props }) {
       id={id}
       rows={rows}
       className={
-        'block w-full rounded-md border border-border bg-surface dark:bg-surface-dark px-3 py-2 text-sm text-text-primary dark:text-text-primary-dark ' +
-        'placeholder:text-slate-400 dark:placeholder:text-slate-500 ' +
-        'focus:ring-2 focus:ring-focus focus:border-transparent ' +
-        'transition-colors disabled:opacity-50 disabled:pointer-events-none resize-none ' +
-        className
+        'form-input resize-none ' + className
       }
       {...props}
     />
@@ -65,10 +57,7 @@ export function FormSelect({ id, className = '', ...props }) {
     <select
       id={id}
       className={
-        'block w-full rounded-md border border-border bg-surface dark:bg-surface-dark px-3 py-2 text-sm text-text-primary dark:text-text-primary-dark ' +
-        'focus:ring-2 focus:ring-focus focus:border-transparent ' +
-        'transition-colors disabled:opacity-50 disabled:pointer-events-none ' +
-        className
+        'form-input ' + className
       }
       {...props}
     />

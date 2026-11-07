@@ -6,7 +6,7 @@ export function Skeleton({ className = '', width = '100%', height = '16px' }) {
   return (
     <div
       className={
-        'animate-pulse rounded bg-surface-muted ' + className
+        'skeleton ' + className
       }
       style={{ width, height }}
     />

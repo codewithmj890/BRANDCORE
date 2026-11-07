@@ -10,7 +10,7 @@ export function Breadcrumbs({ items }) {
   }
 
   return (
-    <nav className="flex items-center gap-1 text-xs text-slate-500 mb-4" aria-label="Breadcrumb">
+    <nav className="flex items-center gap-1 text-xs text-muted-foreground-dark mb-5" aria-label="Breadcrumb">
       {items.map((item, index) => {
         const isLast = index === items.length - 1
         return (
@@ -19,14 +19,14 @@ export function Breadcrumbs({ items }) {
               <>
                 <a
                   href={item.href}
-                  className="hover:text-green-700 dark:hover:text-green-400 transition-colors"
+                  className="hover:text-accent transition-colors"
                 >
                   {item.label}
                 </a>
                 <span className="mx-1">/</span>
               </>
             )}
-            {isLast && <span className="text-text-primary">{item.label}</span>}
+            {isLast && <span className="text-foreground dark:text-foreground-dark">{item.label}</span>}
           </Fragment>
         )
       })}

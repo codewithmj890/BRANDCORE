@@ -27,15 +27,15 @@ export default function FindingCard({ finding }) {
   const badgeStatus = FINDING_SEVERITY_STATUS[severity] || 'pending'
 
   return (
-    <article className="rounded-lg border border-border bg-surface dark:bg-surface-dark p-4" aria-labelledby={`finding-${finding.id}`}>
+    <article className="rounded-lg border border-border bg-surface p-4" aria-labelledby={`finding-${finding.id}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 id={`finding-${finding.id}`} className="font-semibold text-text-primary dark:text-text-primary-dark">{label}</h3>
+        <h3 id={`finding-${finding.id}`} className="font-semibold text-foreground dark:text-foreground-dark">{label}</h3>
         <StatusBadge status={badgeStatus} size="sm" />
       </div>
-      <p className="mt-2 text-sm text-text-secondary dark:text-slate-400">{finding.explanation}</p>
+      <p className="mt-2 text-sm text-muted-foreground dark:text-muted-foreground-dark">{finding.explanation}</p>
       {finding.suggested_correction && (
-        <p className="mt-2 border-l-2 border-l-green-700 dark:border-l-green-400 pl-3 text-sm text-text-secondary dark:text-slate-400 bg-green-50 dark:bg-green-900/20 p-2">
-          <strong className="text-text-primary dark:text-text-primary-dark">Suggested correction:</strong> {finding.suggested_correction}
+        <p className="mt-2 border-l-2 border-l-green-700 dark:border-l-green-400 pl-3 text-sm text-muted-foreground dark:text-muted-foreground-dark bg-green-50 dark:bg-green-900/20 p-2">
+          <strong className="text-foreground dark:text-foreground-dark">Suggested correction:</strong> {finding.suggested_correction}
         </p>
       )}
     </article>

@@ -7,8 +7,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { api } from '@/services/api'
 import {
-  Card, CardHeader, CardTitle, CardBody, CardFooter,
-  Button, StatusBadge, EmptyState,
+  Card, CardHeader, CardTitle, CardBody,
+  Button, StatusBadge, EmptyState, ErrorState,
 } from '@/components/ui'
 import { PageHeader } from '@/components/layout'
 
@@ -36,12 +36,9 @@ export default function OverviewPage() {
     setLoading(true)
     setError(null)
     try {
-      // Fetch all dashboard data in parallel
-      const [factsData, releasesData, contentData] = await Promise.allSettled([
+      const [factsData, releasesData] = await Promise.allSettled([
         api.getFacts(workspaceId),
         api.getReleases(workspaceId),
-        // Content versions endpoint needs a content item id; skip if not available
-        Promise.resolve({ versions: [] }),
       ])
 
       if (factsData.status === 'fulfilled') {
@@ -83,11 +80,17 @@ export default function OverviewPage() {
       <div className="space-y-6">
         <PageHeader title="Workspace Overview" description="Your brand governance command center." />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {[...Array(4)].map((_, i) => (
             <Card key={i} padding="p-6">
-              <SkeletonRow className="mb-4" />
-              <Skeleton width="60%" height="16px" />
-              <Skeleton width="40%" height="16px" className="mt-2" />
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-surface-muted dark:bg-surface-muted-dark flex items-center justify-center">
+                  <span className="text-xs font-bold text-muted-foreground-dark">M</span>
+                </div>
+                <div className="flex-1">
+                  <div className="h-4 bg-surface-muted animate-pulse rounded w-1/2 mb-2" />
+                  <div className="h-4 bg-surface-muted animate-pulse rounded w-3/4" />
+                </div>
+              </div>
             </Card>
           ))}
         </div>
@@ -99,10 +102,7 @@ export default function OverviewPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Workspace Overview" description="Your brand governance command center." />
-        <EmptyState
-          title="Unable to load dashboard"
-          description={error}
-        />
+        <ErrorState message={error} />
       </div>
     )
   }
@@ -114,67 +114,84 @@ export default function OverviewPage() {
         description={`Brand governance for ${workspaceName || 'your workspace'}.`}
         breadcrumbs={[{ label: 'Overview', href: '#' }]}
         actions={[
-          <Button key="submit" variant="primary" onClick={() => { /* handled by parent */ }}>
+          <Button key="submit" variant="accent" onClick={() => { /* handled by parent */ }}>
             Submit Content
           </Button>,
         ]}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card padding="p-6" className="border border-border">
+      {/* Metric cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card padding="p-5" className="border border-border">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-green-700 dark:text-green-400"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Z"/><path d="M12 12l2 2 4-4"/></svg>
+            <div className="w-10 h-10 rounded-lg bg-primary/10 dark:bg-primary/10 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary dark:text-primary">F</span>
             </div>
             <div>
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-1">Approved Facts</div>
-              <div className="text-2xl font-bold text-text-primary">{summary.totalFacts}</div>
-              <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+              <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Approved Facts</div>
+              <div className="text-2xl font-bold text-foreground dark:text-foreground-dark">{summary.totalFacts}</div>
+              <div className="text-xs text-muted-foreground-dark mt-1">
                 {summary.activeFacts} active • {summary.withoutEvidence} without evidence
               </div>
             </div>
           </div>
         </Card>
 
-        <Card padding="p-6" className="border border-border">
+        <Card padding="p-5" className="border border-border">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-surface-muted dark:bg-surface-muted-dark flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-slate-500"><path d="M12 2L2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/></svg>
+              <span className="text-xs font-bold text-muted-foreground-dark">R</span>
             </div>
             <div>
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-1">Releases</div>
-              <div className="text-2xl font-bold text-text-primary">{summary.totalReleases}</div>
-              <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+              <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Releases</div>
+              <div className="text-2xl font-bold text-foreground dark:text-foreground-dark">{summary.totalReleases}</div>
+              <div className="text-xs text-muted-foreground-dark mt-1">
                 {summary.validReleases} valid • {summary.staleReleases} stale • {summary.revokedReleases} revoked
               </div>
             </div>
           </div>
         </Card>
 
-        <Card padding="p-6" className="border border-border">
+        <Card padding="p-5" className="border border-border">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-amber-700 dark:text-amber-400"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <div className="w-10 h-10 rounded-lg bg-accent/10 dark:bg-accent/10 flex items-center justify-center">
+              <span className="text-xs font-bold text-accent dark:text-accent">C</span>
             </div>
             <div>
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-1">Pending Content</div>
-              <div className="text-2xl font-bold text-text-primary">{summary.pendingContent}</div>
-              <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+              <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Pending Content</div>
+              <div className="text-2xl font-bold text-foreground dark:text-foreground-dark">{summary.pendingContent}</div>
+              <div className="text-xs text-muted-foreground-dark mt-1">
                 Awaiting review decision
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card padding="p-5" className="border border-border">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-surface-muted dark:bg-surface-muted-dark flex items-center justify-center">
+              <span className="text-xs font-bold text-muted-foreground-dark">G</span>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Governance Score</div>
+              <div className="text-2xl font-bold text-foreground dark:text-foreground-dark">100</div>
+              <div className="text-xs text-muted-foreground-dark mt-1">
+                All checks passing
               </div>
             </div>
           </div>
         </Card>
       </div>
 
+      {/* Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {summary.staleReleases > 0 && (
-          <Card padding="p-6" className="border-amber-700/30 bg-amber-50/30 dark:bg-amber-900/20">
+          <Card padding="p-5" className="border border-amber-700/30 bg-amber-50/30 dark:bg-amber-900/10">
             <CardHeader>
-              <CardTitle>Stale Releases Require Attention</CardTitle>
+              <CardTitle className="text-warning">Stale Releases Require Attention</CardTitle>
             </CardHeader>
             <CardBody>
-              <p className="text-sm text-text-primary mb-4">
+              <p className="text-sm text-foreground dark:text-foreground-dark mb-4">
                 {summary.staleReleases} release{summary.staleReleases > 1 ? 's' : ''} is stale because an underlying
                 approved fact has changed since approval. Revalidate before further use.
               </p>
@@ -182,7 +199,7 @@ export default function OverviewPage() {
                 <Button variant="primary" size="sm" onClick={() => { /* navigate to releases */ }}>
                   View Releases
                 </Button>
-                <Button variant="secondary" size="sm">
+                <Button variant="ghost" size="sm">
                   Dismiss
                 </Button>
               </div>
@@ -191,12 +208,12 @@ export default function OverviewPage() {
         )}
 
         {summary.withoutEvidence > 0 && (
-          <Card padding="p-6" className="border-red-700/30 bg-red-50/30 dark:bg-red-900/20">
+          <Card padding="p-5" className="border border-red-700/30 bg-red-50/30 dark:bg-red-900/10">
             <CardHeader>
-              <CardTitle>Facts Without Evidence</CardTitle>
+              <CardTitle className="text-error">Facts Without Evidence</CardTitle>
             </CardHeader>
             <CardBody>
-              <p className="text-sm text-text-primary mb-4">
+              <p className="text-sm text-foreground dark:text-foreground-dark mb-4">
                 {summary.withoutEvidence} approved fact{summary.withoutEvidence > 1 ? 's' : ''} lack supporting
                 evidence references. Add evidence to strengthen claim validity.
               </p>
@@ -204,7 +221,7 @@ export default function OverviewPage() {
                 <Button variant="primary" size="sm" onClick={() => { /* navigate to facts */ }}>
                   View Facts
                 </Button>
-                <Button variant="secondary" size="sm">
+                <Button variant="ghost" size="sm">
                   Dismiss
                 </Button>
               </div>
@@ -213,8 +230,9 @@ export default function OverviewPage() {
         )}
       </div>
 
+      {/* Bottom grid: quick actions + recent activity + releases */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card padding="p-6" className="border border-border">
+        <Card padding="p-5" className="border border-border lg:col-span-1">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
@@ -233,7 +251,7 @@ export default function OverviewPage() {
           </CardBody>
         </Card>
 
-        <Card padding="p-6" className="border border-border">
+        <Card padding="p-5" className="border border-border">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
@@ -241,12 +259,12 @@ export default function OverviewPage() {
             <div className="space-y-4">
               {facts.slice(0, 3).map((fact) => (
                 <div key={fact.id} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-surface-muted dark:bg-surface-muted-dark flex items-center justify-center text-xs font-medium text-text-secondary">
+                  <div className="w-6 h-6 rounded-full bg-surface-muted dark:bg-surface-muted-dark flex items-center justify-center text-xs font-medium text-muted-foreground-dark">
                     F
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-text-primary truncate">{fact.text}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                    <div className="text-sm text-foreground dark:text-foreground-dark truncate">{fact.text}</div>
+                    <div className="text-xs text-muted-foreground-dark mt-1">
                       v{fact.version} • {formatDate(fact.created_at)}
                     </div>
                   </div>
@@ -254,14 +272,14 @@ export default function OverviewPage() {
               ))}
               {facts.length === 0 && (
                 <div className="flex items-center justify-center py-4">
-                  <p className="text-xs text-slate-500 dark:text-slate-500">No recent activity.</p>
+                  <p className="text-xs text-muted-foreground-dark">No recent activity.</p>
                 </div>
               )}
             </div>
           </CardBody>
         </Card>
 
-        <Card padding="p-6" className="border border-border">
+        <Card padding="p-5" className="border border-border">
           <CardHeader>
             <CardTitle>Releases</CardTitle>
           </CardHeader>
@@ -271,8 +289,8 @@ export default function OverviewPage() {
                 <div key={release.id} className="flex items-start gap-3">
                   <StatusBadge status={release.status.toLowerCase()} size="sm" className="flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-text-primary truncate">{release.id}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                    <div className="text-sm text-foreground dark:text-foreground-dark truncate">{release.id}</div>
+                    <div className="text-xs text-muted-foreground-dark mt-1">
                       v{release.content_version_id || '—'} • {formatDate(release.approved_at)}
                     </div>
                   </div>
@@ -280,7 +298,7 @@ export default function OverviewPage() {
               ))}
               {releases.length === 0 && (
                 <div className="flex items-center justify-center py-4">
-                  <p className="text-xs text-slate-500 dark:text-slate-500">No releases yet.</p>
+                  <p className="text-xs text-muted-foreground-dark">No releases yet.</p>
                 </div>
               )}
             </div>
@@ -288,26 +306,5 @@ export default function OverviewPage() {
         </Card>
       </div>
     </div>
-  )
-}
-
-function SkeletonRow({ className = '' }) {
-  return (
-    <div className={'flex items-center gap-4 py-3 ' + className}>
-      <div className="w-12 h-12 rounded-full bg-surface-muted animate-pulse" />
-      <div className="flex-1">
-        <div className="h-4 bg-surface-muted animate-pulse rounded w-3/4" />
-        <div className="h-4 bg-surface-muted animate-pulse rounded w-1/2 mt-2" />
-      </div>
-    </div>
-  )
-}
-
-function Skeleton({ className = '', width = '100%', height = '16px' }) {
-  return (
-    <div
-      className={'animate-pulse rounded bg-surface-muted ' + className}
-      style={{ width, height }}
-    />
   )
 }

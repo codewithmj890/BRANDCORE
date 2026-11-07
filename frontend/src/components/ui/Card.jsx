@@ -6,7 +6,7 @@ export function Card({ className = '', children, padding = 'p-6' }) {
   return (
     <div
       className={
-        'bg-surface dark:bg-surface-dark border border-border rounded-lg shadow-sm ' +
+        'card ' +
         padding + ' ' + className
       }
     >
@@ -16,12 +16,12 @@ export function Card({ className = '', children, padding = 'p-6' }) {
 }
 
 export function CardHeader({ className = '', children }) {
-  return <div className={'mb-4 ' + className}>{children}</div>
+  return <div className={'mb-5 ' + className}>{children}</div>
 }
 
 export function CardTitle({ className = '', children }) {
   return (
-    <h3 className={'text-lg font-semibold text-text-primary ' + className}>{children}</h3>
+    <h3 className={'text-lg font-semibold text-foreground dark:text-foreground-dark ' + className}>{children}</h3>
   )
 }
 
@@ -31,6 +31,6 @@ export function CardBody({ className = '', children }) {
 
 export function CardFooter({ className = '', children }) {
   return (
-    <div className={'mt-4 flex items-center gap-2 ' + className}>{children}</div>
+    <div className={'mt-5 flex items-center gap-2 ' + className}>{children}</div>
   )
 }

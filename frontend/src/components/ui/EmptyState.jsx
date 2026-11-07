@@ -11,12 +11,12 @@ export function EmptyState({ icon, title, description, action, className = '' })
         'flex flex-col items-center justify-center py-12 text-center ' + className
       }
     >
-      <div className="w-16 h-16 rounded-lg bg-surface-muted dark:bg-surface-muted-dark flex items-center justify-center mb-4">
+      <div className="w-16 h-16 rounded-lg bg-surface-muted dark:bg-surface-muted-dark flex items-center justify-center mb-5">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-text-primary mb-2">{title}</h3>
+      <h3 className="text-lg font-semibold text-foreground dark:text-foreground-dark mb-2">{title}</h3>
       {description && (
-        <p className="text-text-secondary text-sm max-w-xs mb-6">{description}</p>
+        <p className="text-muted-foreground text-sm max-w-xs mb-6">{description}</p>
       )}
       {action && <Button variant="secondary" size="sm">{action}</Button>}
     </div>
@@ -24,5 +24,5 @@ export function EmptyState({ icon, title, description, action, className = '' })
 }
 
 export function EmptyStateIcon({ children }) {
-  return <span className="text-text-secondary">{children}</span>
+  return <span className="text-muted-foreground">{children}</span>
 }

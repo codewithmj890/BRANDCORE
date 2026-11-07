@@ -13,7 +13,7 @@ import {
 } from '@/components/ui'
 
 const FOCUS_RING =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
+  'focus-ring focus-ring'
 
 export function validateContent({ title, body_text }) {
   const errors = {}
@@ -29,7 +29,7 @@ export function validateContent({ title, body_text }) {
 function CharCount({ id, value, max }) {
   const over = value.length > max
   return (
-    <p id={id} className={`text-xs mt-1 ${over ? 'text-red-700 dark:text-red-400 font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
+    <p id={id} className={`text-xs mt-1 ${over ? 'text-red-700 dark:text-red-400 font-medium' : 'text-muted-foreground-dark dark:text-muted-foreground-dark'}`}>
       {value.length.toLocaleString()} / {max.toLocaleString()} characters
     </p>
   )
@@ -69,25 +69,25 @@ function SuccessPanel({ result, onReset, headingRef }) {
       >
         <span aria-hidden="true">✓ </span>Content submitted — version 1 created
       </h2>
-      <p className="text-sm text-text-primary dark:text-text-primary-dark mt-1">
+      <p className="text-sm text-foreground dark:text-foreground-dark mt-1">
         This content version is now immutable. Any edits will create a new version.
       </p>
       <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-xs">
-        <dt className="text-slate-600 dark:text-slate-400">Content item</dt>
-        <dd className="font-mono text-text-primary dark:text-text-primary-dark break-all">{result.content_item_id}</dd>
-        <dt className="text-slate-600 dark:text-slate-400">Content version</dt>
-        <dd className="font-mono text-text-primary dark:text-text-primary-dark break-all">{result.content_version_id}</dd>
-        <dt className="text-slate-600 dark:text-slate-400">SHA-256</dt>
-        <dd className="font-mono text-text-primary dark:text-text-primary-dark break-all">{result.sha256_hash}</dd>
-        <dt className="text-slate-600 dark:text-slate-400">Submitted</dt>
-        <dd className="text-text-primary dark:text-text-primary-dark">
+        <dt className="text-muted-foreground-dark dark:text-muted-foreground-dark">Content item</dt>
+        <dd className="font-mono text-foreground dark:text-foreground-dark break-all">{result.content_item_id}</dd>
+        <dt className="text-muted-foreground-dark dark:text-muted-foreground-dark">Content version</dt>
+        <dd className="font-mono text-foreground dark:text-foreground-dark break-all">{result.content_version_id}</dd>
+        <dt className="text-muted-foreground-dark dark:text-muted-foreground-dark">SHA-256</dt>
+        <dd className="font-mono text-foreground dark:text-foreground-dark break-all">{result.sha256_hash}</dd>
+        <dt className="text-muted-foreground-dark dark:text-muted-foreground-dark">Submitted</dt>
+        <dd className="text-foreground dark:text-foreground-dark">
           <time dateTime={result.created_at}>{new Date(result.created_at).toLocaleString()}</time>
         </dd>
       </dl>
       <button
         type="button"
         onClick={onReset}
-        className="mt-4 rounded-md border border-border bg-surface dark:bg-surface-dark px-3 py-2 text-sm font-medium text-text-primary dark:text-text-primary-dark hover:bg-surface-muted dark:hover:bg-surface-muted ${FOCUS_RING}"
+        className="mt-4 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground dark:text-foreground-dark hover:bg-surface-muted dark:hover:bg-surface-muted ${FOCUS_RING}"
       >
         Submit another content item
       </button>
@@ -188,13 +188,13 @@ export default function ContentSubmissionForm({ workspaceId, onSubmitted }) {
             <span aria-hidden="true">⚠ </span>Submission failed
           </p>
           <p className="mt-0.5">{submitError}</p>
-          <p className="mt-0.5 text-xs dark:text-slate-400">Your text has been kept. You can retry when ready.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground-dark dark:text-muted-foreground-dark">Your text has been kept. You can retry when ready.</p>
         </div>
       )}
 
       <div>
-        <label htmlFor={ids.title} className="block text-sm font-medium text-text-primary dark:text-text-primary-dark">
-          Title <span className="text-slate-600 dark:text-slate-400 font-normal">(required)</span>
+        <label htmlFor={ids.title} className="block text-sm font-medium text-foreground dark:text-foreground-dark">
+          Title <span className="text-muted-foreground-dark dark:text-muted-foreground-dark font-normal">(required)</span>
         </label>
         <FormInput
           ref={titleRef}
@@ -213,8 +213,8 @@ export default function ContentSubmissionForm({ workspaceId, onSubmitted }) {
       </div>
 
       <div>
-        <label htmlFor={ids.body} className="block text-sm font-medium text-text-primary dark:text-text-primary-dark">
-          Content <span className="text-slate-600 dark:text-slate-400 font-normal">(required — plain text)</span>
+        <label htmlFor={ids.body} className="block text-sm font-medium text-foreground dark:text-foreground-dark">
+          Content <span className="text-muted-foreground-dark dark:text-muted-foreground-dark font-normal">(required — plain text)</span>
         </label>
         <FormTextarea
           ref={bodyRef}
@@ -257,7 +257,7 @@ export default function ContentSubmissionForm({ workspaceId, onSubmitted }) {
           {submitting && <Spinner />}
           {submitting ? 'Submitting…' : 'Submit for review'}
         </Button>
-        <p className="text-xs text-slate-600 dark:text-slate-400">Submitted content becomes an immutable version.</p>
+        <p className="text-xs text-muted-foreground-dark dark:text-muted-foreground-dark">Submitted content becomes an immutable version.</p>
       </div>
 
       <p className="sr-only" aria-live="polite">

@@ -90,8 +90,8 @@ export function WorkspaceOnboarding() {
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-text-primary">Session expired</h3>
-        <p className="text-text-secondary text-sm max-w-xs">
+        <h3 className="text-lg font-semibold text-foreground">Session expired</h3>
+        <p className="text-muted-foreground text-sm max-w-xs">
           Your session is no longer valid. Please sign in again to continue.
         </p>
         <Button variant="primary" size="sm" onClick={() => window.location.reload()}>
@@ -127,8 +127,8 @@ export function WorkspaceOnboarding() {
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-text-primary">Workspace ready</h3>
-        <p className="text-text-secondary text-sm max-w-xs">
+        <h3 className="text-lg font-semibold text-foreground">Workspace ready</h3>
+        <p className="text-muted-foreground text-sm max-w-xs">
           Your BRANDCORE workspace is set up. You can now explore the application.
         </p>
         <Button variant="primary" size="sm" onClick={() => window.location.reload()}>
@@ -156,8 +156,8 @@ export function WorkspaceOnboarding() {
           <path d="M12 12m-3 0l3 3 3-3" />
         </svg>
       </div>
-      <h3 className="text-lg font-semibold text-text-primary">Workspace Setup</h3>
-      <p className="text-text-secondary text-sm max-w-xs">
+      <h3 className="text-lg font-semibold text-foreground">Workspace Setup</h3>
+      <p className="text-muted-foreground text-sm max-w-xs">
         Your Clerk organization is active, but it isn&rsquo;t mapped to a BRANDCORE workspace yet.
       </p>
 
@@ -165,17 +165,17 @@ export function WorkspaceOnboarding() {
         <Card className="w-full max-w-md">
           <CardBody className="p-6">
             <CardTitle>Create Workspace</CardTitle>
-            <p className="text-xs text-text-secondary mb-6">
+            <p className="text-xs text-muted-foreground mb-6">
               Provide a name for your new workspace. This will be linked to your Clerk organization.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Workspace name
                 </label>
                 <input
                   type="text"
-                  className="block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-slate-400 focus:ring-2 focus:ring-focus focus:border-transparent transition-colors"
+                  className="block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground-dark focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
                   placeholder="e.g. Acme Corp Brand Governance"
                   value={localWorkspaceName}
                   onChange={(e) => setLocalWorkspaceName(e.target.value)}
@@ -183,18 +183,18 @@ export function WorkspaceOnboarding() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Workspace slug (optional)
                 </label>
                 <input
                   type="text"
-                  className="block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-slate-400 focus:ring-2 focus:ring-focus focus:border-transparent transition-colors"
+                  className="block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground-dark focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
                   placeholder="e.g. acme-brand"
                   value={workspaceSlug}
                   onChange={(e) => setWorkspaceSlug(e.target.value)}
                   disabled={provisioning}
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted-foreground-dark mt-1">
                   URL-friendly identifier for your workspace.
                 </p>
               </div>
@@ -218,11 +218,11 @@ export function WorkspaceOnboarding() {
 
       {isMember && (
         <div className="max-w-md">
-          <p className="text-text-secondary text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             You&rsquo;re a member of this organization, but not an administrator.
             Only an organization admin can create a BRANDCORE workspace.
           </p>
-          <p className="text-text-secondary text-xs mb-6">
+          <p className="text-muted-foreground text-xs mb-6">
             Please ask your organization administrator to set up the workspace,
             then refresh this page.
           </p>

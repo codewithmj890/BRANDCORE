@@ -159,19 +159,19 @@ export default function ReleaseGovernancePage() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Total releases</div>
-            <div className="text-2xl font-bold text-text-primary">{summary.total}</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Total releases</div>
+            <div className="text-2xl font-bold text-foreground">{summary.total}</div>
           </Card>
           <Card padding="p-4" className="border-green-700/20 bg-green-50/30 dark:bg-green-900/20">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Valid</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Valid</div>
             <div className="text-2xl font-bold text-green-700">{summary.valid}</div>
           </Card>
           <Card padding="p-4" className="border-amber-700/20 bg-amber-50/30 dark:bg-amber-900/20">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Stale</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Stale</div>
             <div className="text-2xl font-bold text-amber-700">{summary.stale}</div>
           </Card>
           <Card padding="p-4" className="border-red-700/20 bg-red-50/30 dark:bg-red-900/20">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Revoked</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Revoked</div>
             <div className="text-2xl font-bold text-red-700 dark:text-red-400">{summary.revoked}</div>
           </Card>
         </div>
@@ -192,7 +192,7 @@ export default function ReleaseGovernancePage() {
         <div className="overflow-x-auto border border-border rounded-lg">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface-muted text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              <tr className="bg-surface-muted text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <th className="px-4 py-3 border-b border-border" scope="col">Release</th>
                 <th className="px-4 py-3 border-b border-border" scope="col">Status</th>
                 <th className="px-4 py-3 border-b border-border" scope="col">Content Version</th>
@@ -214,12 +214,12 @@ export default function ReleaseGovernancePage() {
                 filteredReleases.map((release) => (
                   <tr
                     key={release.id}
-                    className="bg-surface dark:bg-surface-dark hover:bg-surface-muted transition-colors group cursor-pointer"
+                     className="bg-surface hover:bg-surface-muted transition-colors group cursor-pointer"
                     onClick={() => setSelectedRelease(release)}
                   >
                     <td className="px-4 py-3">
-                      <div className="text-sm text-text-primary font-medium">{release.id}</div>
-                      <div className="text-xs text-slate-500 mt-1">
+                      <div className="text-sm text-foreground font-medium">{release.id}</div>
+                      <div className="text-xs text-muted-foreground-dark mt-1">
                         Content hash: {release.content_sha256 || '—'}
                       </div>
                     </td>
@@ -227,10 +227,10 @@ export default function ReleaseGovernancePage() {
                       <StatusBadge status={release.status.toLowerCase()} />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-text-primary">{release.content_version_id || '—'}</div>
+                      <div className="text-sm text-foreground">{release.content_version_id || '—'}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs text-text-secondary">
+                      <span className="text-xs text-muted-foreground">
                         {formatDateTime(release.approved_at)}
                       </span>
                     </td>
@@ -288,9 +288,9 @@ function ReleasePassportDrawer({ release, onClose, demoMode }) {
       <div className="relative bg-surface border-t border-border rounded-t-lg shadow-2xl w-full max-w-2xl p-6 mx-4 animate-slide-in">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-xl font-bold text-text-primary">Release Passport</h2>
-            <p className="text-text-secondary text-sm mt-1">
-              Release ID: <span className="font-mono text-text-primary">{release.id}</span>
+            <h2 className="text-xl font-bold text-foreground">Release Passport</h2>
+            <p className="text-muted-foreground text-sm mt-1">
+              Release ID: <span className="font-mono text-foreground">{release.id}</span>
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -306,20 +306,20 @@ function ReleasePassportDrawer({ release, onClose, demoMode }) {
             <CardBody>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</p>
+                  <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Status</p>
                   <StatusBadge status={release.status.toLowerCase()} className="mt-1" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Content hash</p>
-                  <p className="text-sm font-mono text-text-primary truncate">{release.content_sha256}</p>
+                  <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Content hash</p>
+                  <p className="text-sm font-mono text-foreground truncate">{release.content_sha256}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Approved at</p>
-                  <p className="text-sm text-text-primary">{formatDateTime(release.approved_at)}</p>
+                  <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Approved at</p>
+                  <p className="text-sm text-foreground">{formatDateTime(release.approved_at)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Approved by</p>
-                  <p className="text-sm text-text-primary">{release.approved_by || '—'}</p>
+                  <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Approved by</p>
+                  <p className="text-sm text-foreground">{release.approved_by || '—'}</p>
                 </div>
               </div>
             </CardBody>
@@ -334,23 +334,23 @@ function ReleasePassportDrawer({ release, onClose, demoMode }) {
                 </div>
               </CardHeader>
               <CardBody>
-                <p className="text-sm text-text-primary mb-3">
+                <p className="text-sm text-foreground mb-3">
                   This release is <span className="font-semibold text-amber-700">STALE</span> because an underlying
                   approved fact has changed since approval. The content should be revalidated before further use.
                 </p>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Reason</p>
-                    <p className="text-sm text-text-primary">{release.stale_reason || 'Dependent fact was updated'}</p>
+                    <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Reason</p>
+                    <p className="text-sm text-foreground">{release.stale_reason || 'Dependent fact was updated'}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stale since</p>
-                    <p className="text-sm text-text-primary">{formatDateTime(release.stale_since)}</p>
+                    <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Stale since</p>
+                    <p className="text-sm text-foreground">{formatDateTime(release.stale_since)}</p>
                   </div>
                   {release.changed_facts && release.changed_facts.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Changed facts</p>
-                      <ul className="list-disc list-inside text-sm text-text-secondary mt-1 space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider">Changed facts</p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground mt-1 space-y-1">
                         {release.changed_facts.map((cf, i) => (
                           <li key={i}>
                             Fact <span className="font-mono">{cf.fact_id}</span>: version{' '}
@@ -379,12 +379,12 @@ function ReleasePassportDrawer({ release, onClose, demoMode }) {
             <CardBody>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">Content version ID</span>
-                  <span className="font-mono text-text-primary">{release.content_version_id || '—'}</span>
+                  <span className="text-muted-foreground">Content version ID</span>
+                  <span className="font-mono text-foreground">{release.content_version_id || '—'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary">Policy version</span>
-                  <span className="font-mono text-text-primary">{release.policy_version_id || '—'}</span>
+                  <span className="text-muted-foreground">Policy version</span>
+                  <span className="font-mono text-foreground">{release.policy_version_id || '—'}</span>
                 </div>
               </div>
             </CardBody>

@@ -193,19 +193,19 @@ export default function ApprovedFactsPage() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Total facts</div>
-            <div className="text-2xl font-bold text-text-primary">{factSummary.total}</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Total facts</div>
+            <div className="text-2xl font-bold text-foreground">{factSummary.total}</div>
           </Card>
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Active</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Active</div>
             <div className="text-2xl font-bold text-green-700">{factSummary.active}</div>
           </Card>
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Expiring soon</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Expiring soon</div>
             <div className="text-2xl font-bold text-amber-700">{factSummary.expiring}</div>
           </Card>
           <Card padding="p-4">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Without evidence</div>
+            <div className="text-xs font-semibold text-muted-foreground-dark uppercase tracking-wider mb-1">Without evidence</div>
             <div className="text-2xl font-bold text-red-700 dark:text-red-400">{factSummary.withoutEvidence}</div>
           </Card>
         </div>
@@ -241,7 +241,7 @@ export default function ApprovedFactsPage() {
         <div className="overflow-x-auto border border-border rounded-lg">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface-muted text-xs font-semibold text-text-secondary uppercase tracking-wider">
+              <tr className="bg-surface-muted text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <th className="px-4 py-3 border-b border-border" scope="col">Claim</th>
                 <th className="px-4 py-3 border-b border-border" scope="col">Value &amp; Qualifier</th>
                 <th className="px-4 py-3 border-b border-border" scope="col">Scope</th>
@@ -263,25 +263,25 @@ export default function ApprovedFactsPage() {
                 </tr>
               ) : (
                 filteredFacts.map((fact) => (
-                  <tr key={fact.id} className="bg-surface dark:bg-surface-dark hover:bg-surface-muted transition-colors group">
+                  <tr key={fact.id} className="bg-surface hover:bg-surface-muted transition-colors group">
                     <td className="px-4 py-3">
-                      <div className="text-sm text-text-primary font-medium">{fact.text}</div>
-                      <div className="text-xs text-slate-500 mt-1">
+                      <div className="text-sm text-foreground font-medium">{fact.text}</div>
+                      <div className="text-xs text-muted-foreground-dark mt-1">
                         v{fact.version} • {formatDate(fact.created_at)}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-text-primary">
+                      <div className="text-sm text-foreground">
                         {fact.text.match(/\d+(\.\d+)?%?/)?.[0] || '—'}
-                        {fact.qualifier ? ` <span className="text-slate-500 font-normal">({fact.qualifier})</span>` : ''}
+                        {fact.qualifier ? ` <span className="text-muted-foreground-dark font-normal">({fact.qualifier})</span>` : ''}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-text-primary">
+                      <div className="text-sm text-foreground">
                         {fact.scope?.product || '—'}
                       </div>
                       {fact.scope?.region && (
-                        <span className="text-xs text-slate-500 block mt-0.5">{fact.scope.region}</span>
+                        <span className="text-xs text-muted-foreground-dark block mt-0.5">{fact.scope.region}</span>
                       )}
                       {fact.scope?.valid_until && (
                         <span className="text-xs text-red-600 dark:text-red-400 block mt-0.5">Expires {formatDate(fact.scope.valid_until)}</span>
@@ -289,12 +289,12 @@ export default function ApprovedFactsPage() {
                     </td>
                     <td className="px-4 py-3">
                       {fact.evidence_count ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-muted text-xs text-text-secondary">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-muted text-xs text-muted-foreground">
                           #{fact.evidence_id?.slice(-3) || '—'}
                           <span className="w-1.5 h-1.5 rounded-full bg-green-700" />
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-400">None</span>
+                        <span className="text-xs text-muted-foreground-dark">None</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -406,10 +406,10 @@ function FactFormDialog({ fact, onSave, onClose, demoMode, workspaceId }) {
       <div className="relative bg-surface border border-border rounded-lg shadow-lg w-full max-w-2xl p-6 mx-4 md:mx-0 animate-slide-in">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-xl font-bold text-text-primary">
+            <h2 className="text-xl font-bold text-foreground">
               {initialFact ? 'Edit Approved Fact' : 'Create Approved Fact'}
             </h2>
-            <p className="text-text-secondary text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               {initialFact ? 'Modify claim details and evidence references.' : 'Define a new approved brand fact.'}
             </p>
           </div>
@@ -435,7 +435,7 @@ function FactFormDialog({ fact, onSave, onClose, demoMode, workspaceId }) {
             </FormField>
 
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-text-primary mb-1">Numeric value &amp; unit</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Numeric value &amp; unit</label>
               <div className="flex gap-2">
                 <FormField label="Value" className="mb-0">
                   <FormInput
@@ -505,7 +505,7 @@ function FactFormDialog({ fact, onSave, onClose, demoMode, workspaceId }) {
           </div>
 
           <CardFooter className="justify-between pt-0 mt-6 border-t border-border">
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-muted-foreground-dark">
               {demoMode ? 'Demo mode — changes not persisted' : ''}
             </span>
             <div className="flex gap-3">

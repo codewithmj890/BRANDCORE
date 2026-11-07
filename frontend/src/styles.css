@@ -1,10 +1,124 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Canvas and surfaces */
+    --color-canvas: #F8FAFC;
+    --color-surface: #FFFFFF;
+    --color-surface-muted: #F1F5F9;
+    --color-surface-elevated: #FFFFFF;
+
+    /* Brand - Navy primary */
+    --color-primary: #0F172A;
+    --color-on-primary: #FFFFFF;
+    --color-primary-hover: #0B1020;
+    --color-primary-light: #E2E8F0;
+
+    /* Secondary */
+    --color-secondary: #334155;
+    --color-on-secondary: #FFFFFF;
+
+    /* Accent - Blue CTA */
+    --color-accent: #0369A1;
+    --color-on-accent: #FFFFFF;
+    --color-accent-hover: #025686;
+    --color-accent-light: #DBEAFE;
+
+    /* Text */
+    --color-foreground: #020617;
+    --color-foreground-dark: #F8FAFC;
+    --color-muted-foreground: #475569;
+    --color-muted-foreground-dark: #94A3B8;
+
+    /* Border */
+    --color-border: #E2E8F0;
+
+    /* Destructive */
+    --color-destructive: #DC2626;
+    --color-on-destructive: #FFFFFF;
+    --color-destructive-light: #FECACA;
+
+    /* Semantic status */
+    --color-success: #15803d;
+    --color-success-light: #DCFCE7;
+    --color-warning: #986000;
+    --color-warning-light: #FFF1CC;
+    --color-error: #B42318;
+    --color-error-light: #FEE4E2;
+
+    /* Focus ring */
+    --color-ring: #0369A1;
+
+    /* Typography */
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+
+  .dark {
+    /* Canvas and surfaces */
+    --color-canvas: #020617;
+    --color-surface: #0F172A;
+    --color-surface-muted: #1E293B;
+    --color-surface-elevated: #1E293B;
+
+    /* Brand - Navy primary */
+    --color-primary: #F8FAFC;
+    --color-on-primary: #020617;
+    --color-primary-hover: #E2E8F0;
+    --color-primary-light: #1E293B;
+
+    /* Secondary */
+    --color-secondary: #94A3B8;
+    --color-on-secondary: #020617;
+
+    /* Accent - Blue CTA */
+    --color-accent: #38BDF8;
+    --color-on-accent: #020617;
+    --color-accent-hover: #7DD3FC;
+    --color-accent-light: #0C4A6E;
+
+    /* Text */
+    --color-foreground: #F8FAFC;
+    --color-foreground-dark: #F8FAFC;
+    --color-muted-foreground: #94A3B8;
+    --color-muted-foreground-dark: #94A3B8;
+
+    /* Border */
+    --color-border: #334155;
+
+    /* Destructive */
+    --color-destructive: #F87171;
+    --color-on-destructive: #020617;
+    --color-destructive-light: #7F1D1D;
+
+    /* Semantic status */
+    --color-success: #34D399;
+    --color-success-light: #064E3B;
+    --color-warning: #F0C674;
+    --color-warning-light: #713F12;
+    --color-error: #E87A6E;
+    --color-error-light: #7F1D1D;
+
+    /* Focus ring */
+    --color-ring: #38BDF8;
+  }
+
   html {
     color-scheme: light;
   }
@@ -14,29 +128,16 @@
   }
 
   body {
-    @apply bg-canvas text-text-primary;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    @apply bg-canvas text-foreground;
+    font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.5;
     transition: background-color 0.2s ease, color 0.2s ease;
+    -webkit-font-smoothing: antialiased;
   }
 
   * {
     @apply border-border;
-  }
-
-  /* Dark mode surface overrides — ensures all bg-surface classes respond to theme */
-  html.dark .bg-surface {
-    background-color: #111827;
-  }
-  html.dark .bg-surface-muted {
-    background-color: #1E293B;
-  }
-  html.dark .text-slate-500 {
-    color: #94A3B8;
-  }
-  html.dark .border-border {
-    border-color: #334155;
   }
 
   /* Ensure theme class is applied before paint to prevent flash */
@@ -47,7 +148,47 @@
 
 @layer components {
   .focus-ring {
-    @apply focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:outline-none;
+    @apply focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-2 focus-visible:outline-none;
+  }
+
+  .btn-base {
+    @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus-ring disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn-base bg-primary text-on-primary;
+  }
+
+  .btn-accent {
+    @apply btn-base bg-accent text-on-accent;
+  }
+
+  .btn-secondary {
+    @apply btn-base bg-surface text-foreground border border-border;
+  }
+
+  .btn-ghost {
+    @apply btn-base text-muted-foreground;
+  }
+
+  .btn-danger {
+    @apply btn-base bg-destructive text-on-destructive;
+  }
+
+  .card {
+    @apply rounded-lg border border-border bg-surface shadow-sm;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border whitespace-nowrap;
+  }
+
+  .form-input {
+    @apply block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:ring-2 focus:ring-[var(--color-ring)] focus:border-transparent disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded bg-surface-muted;
   }
 }
 

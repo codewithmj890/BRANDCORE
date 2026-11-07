@@ -1,14 +1,16 @@
 /**
  * BRANDCORE — Button Component
- * Primary, secondary, danger, and ghost variants with consistent sizing.
+ * Primary, accent, secondary, danger, and ghost variants with consistent sizing.
+ * Built on design system CSS variables.
  */
 import { forwardRef } from 'react'
 
 const variants = {
-  primary: 'bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-700',
-  secondary: 'bg-surface text-text-primary border border-border hover:bg-surface-muted focus-visible:ring-slate-700',
-  danger: 'bg-red-700 text-white hover:bg-red-800 focus-visible:ring-red-700',
-  ghost: 'text-text-secondary hover:bg-surface-muted hover:text-text-primary focus-visible:ring-slate-700',
+  primary: 'btn-primary hover:bg-primary/90',
+  accent: 'btn-accent hover:bg-accent/90',
+  secondary: 'btn-secondary hover:bg-surface-muted',
+  danger: 'btn-danger hover:bg-destructive/90',
+  ghost: 'btn-ghost hover:bg-surface-muted hover:text-foreground',
 }
 
 const sizes = {
@@ -19,8 +21,6 @@ const sizes = {
 
 export const Button = forwardRef(({ variant = 'primary', size = 'md', className = '', disabled, asChild, ...props }, ref) => {
   const baseClasses =
-    'inline-flex items-center justify-center rounded-md font-medium transition-colors ' +
-    'focus-ring disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed ' +
     variants[variant] + ' ' + sizes[size] + ' ' + className
 
   return (
