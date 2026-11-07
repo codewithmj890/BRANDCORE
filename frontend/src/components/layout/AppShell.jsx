@@ -3,7 +3,7 @@
  * Main application layout shell combining Sidebar, TopBar, and content area.
  *
  * Layout:
- * - Desktop: CSS Grid with sidebar column (256px expanded / 72px collapsed) + main content
+ * - Desktop: CSS Grid with sidebar column (232px expanded / 72px collapsed) + main content
  * - Mobile: sidebar hidden from grid, overlay drawer controlled by topbar hamburger
  * - Sidebar collapse preference persisted in localStorage
  * - Single source of truth for sidebar collapsed + mobile open state
@@ -44,7 +44,7 @@ export function AppShell({ workspace, backendStatus, children, header }) {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  const sidebarWidth = sidebarCollapsed ? '76px' : '232px'
+  const sidebarWidth = sidebarCollapsed ? '72px' : '232px'
 
   const handleHamburgerClick = () => {
     if (sidebarOpen) {

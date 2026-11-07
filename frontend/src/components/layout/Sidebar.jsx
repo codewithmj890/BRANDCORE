@@ -3,7 +3,7 @@
  * Premium minimal icon-first enterprise navigation.
  *
  * Design system: Minimalism & Swiss Style (UI/UX Pro Max)
- * - Collapsed: circular icon controls (40px inner, 44px button) in 72px sidebar
+ * - Collapsed: circular icon controls (44px inner) in 72px sidebar
  * - Expanded: circular icon controls + labels in 232px sidebar
  * - Active state: thin circular border + subtle accent-tinted surface
  * - Hover state: subtle circular surface, cursor pointer
@@ -14,7 +14,7 @@
  */
 import { useEffect, useCallback } from 'react'
 
-const COLLAPSED_WIDTH = 'w-19'   // 76px — circular icon controls only
+const COLLAPSED_WIDTH = 'w-18'   // 72px — circular icon controls only
 const EXPANDED_WIDTH = 'w-58'    // 232px — circular icons + labels
 
 const ICON_SIZE = 'w-[21px] h-[21px]'   // 21px icons

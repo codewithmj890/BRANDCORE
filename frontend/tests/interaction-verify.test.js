@@ -237,11 +237,11 @@ test.describe('BRANDCORE critical interaction repair verification', () => {
           await hamburger.click();
           await page.waitForTimeout(1000);
 
-          // Collapsed width should be approximately 76px (plus 1px border)
+          // Collapsed width should be approximately 72px (plus 1px border)
           const collapsedBox = await sidebar.boundingBox();
           if (collapsedBox) {
-            expect(collapsedBox.width).toBeGreaterThanOrEqual(74);
-            expect(collapsedBox.width).toBeLessThanOrEqual(78);
+            expect(collapsedBox.width).toBeGreaterThanOrEqual(70);
+            expect(collapsedBox.width).toBeLessThanOrEqual(74);
           }
 
           // Click hamburger again to restore

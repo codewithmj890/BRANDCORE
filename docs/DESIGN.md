@@ -150,7 +150,7 @@ All active design specifications live in:
 
 The application shell consists of:
 - **TopBar:** Sticky header with workspace identity, backend status, theme toggle, Clerk auth controls
-- **Sidebar:** Collapsible navigation (256px expanded / 72px collapsed), active state indicators
+- **Sidebar:** Collapsible navigation (232px expanded / 72px collapsed), active state indicators
 - **MainContent:** Flex-1 content area with sidebar offset
 - **MobileNavigation:** Overlay drawer with Escape-to-close and backdrop click
 
