@@ -81,7 +81,7 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
     <>
       {/* Desktop sidebar — CSS Grid column */}
       <aside
-        className={['hidden md:flex', sidebarClasses, className || ''].join(' ').trim()}
+        className={['hidden lg:flex', sidebarClasses, className || ''].join(' ').trim()}
         id="brandcore-sidebar"
         aria-label="Main navigation"
       >
@@ -99,7 +99,7 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={isCollapsed ? item.label : undefined}
                   className={
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ' +
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all ' +
                     (isActive
                       ? 'bg-accent/10 dark:bg-accent/10 border border-accent/20 text-accent dark:text-accent'
                       : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground')
@@ -127,14 +127,14 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden"
             onClick={handleCloseMobile}
             aria-hidden="true"
           />
           <aside
             id="brandcore-sidebar-mobile"
             className={
-              'fixed inset-y-0 left-0 z-50 w-[256px] max-w-full bg-surface border-r border-border flex flex-col md:hidden transition-transform duration-300 ease-in-out' +
+              'fixed inset-y-0 left-0 z-50 w-[256px] max-w-full bg-surface border-r border-border flex flex-col lg:hidden transition-transform duration-300 ease-in-out' +
               (isOpen ? ' translate-x-0' : ' -translate-x-full')
             }
             aria-label="Main navigation"
@@ -153,7 +153,7 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
                       }}
                       aria-current={isActive ? 'page' : undefined}
                       className={
-                        'w-full flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-medium transition-colors ' +
+                        'w-full flex items-center gap-4 px-4 py-3 rounded-md text-sm font-medium transition-colors ' +
                         (isActive
                           ? 'bg-accent/10 dark:bg-accent/10 text-accent dark:text-accent'
                           : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground')

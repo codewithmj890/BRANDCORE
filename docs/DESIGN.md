@@ -1,199 +1,206 @@
 # BRANDCORE — Design System
 
-**Version:** 0.4.0 · **Authority:** This is the single source of truth for all BRANDCORE application UI.
-**Direction:** Refined editorial SaaS + forest-green identity + intelligent data presentation.
-Professional editorial B2B governance workspace. Calm, precise, evidence-first.
+**Version:** 0.5.0 · **Authority:** This document references the canonical design system at `design-system/brandcore/MASTER.md`.
+**Direction:** Premium enterprise SaaS + navy/grey corporate + trust blue accent + Accessible & Ethical style.
+Professional B2B brand governance workspace. Trustworthy, precise, evidence-first.
 Not a generic AI chat UI and not a cinematic marketing page.
 
-**Design seed:** Forest-green editorial enterprise (recorded as ADR-010). Single canonical source — all UI work references only this document.
+**Design seed:** Enterprise B2B service with Accessible & Ethical style (WCAG 2.2 AA target).
+Single canonical source — all UI work references `design-system/brandcore/MASTER.md` and page-specific overrides in `design-system/brandcore/pages/`.
 
 ---
 
-## 1. Visual Direction
+## Historical Design (v0.4.0 — Forest Green Editorial)
 
-BRANDCORE is a workspace for brand governance professionals. The visual language is:
-- **Refined editorial SaaS** — clean, dense information presented clearly
-- **Forest-green identity** — deep forest green primary accent, restrained emerald states
-- **Evidence-first** — findings, evidence links and review status are always visible
-- **Trustworthy** — consistent, predictable, no surprises
+The previous design system used a forest-green editorial identity with deep forest-green primary (`#15803d`), warm neutral background, and system UI font stack. This has been retired in favor of the new enterprise navy/blue design system. The previous design is preserved here for historical reference only and is no longer the active specification.
 
-Light theme:
-- Warm neutral background (`#F5F7FA`)
-- Clean white surfaces (`#FFFFFF`)
-- Deep forest-green primary accent (`#15803d`)
-- Restrained emerald states
-- Clear typography
-- Soft, consistent borders
-- Subtle depth
+### Previous Color Tokens (Retired)
 
-Dark theme:
-- Deep charcoal/forest surfaces (`#0A0F17`)
-- Multiple clearly distinguishable elevation levels
-- Muted but readable secondary text
-- Refined green accents (`#34D399`)
-- Comfortable contrast
-
-Do not overload the UI with:
-- Neon effects
-- Random gradients
-- Excessive glassmorphism
-- Excessive shadows
-- Oversized headings
-- Unnecessary charts
-- Decorative elements without purpose
-
-Every visual decision must improve usability, hierarchy or brand identity.
+| Role | Hex |
+|------|-----|
+| Primary (forest green) | `#15803d` |
+| Background | `#F5F7FA` |
+| Surface | `#FFFFFF` |
+| Text primary | `#162638` |
+| Text secondary | `#5C6D80` |
+| Border | `#DCE3EA` |
 
 ---
 
-## 2. Color Tokens
+## Canonical Design System (v0.5.0 — Active)
 
-```css
-/* Canvas and surfaces */
---canvas:        #F5F7FA;
---canvas-dark:   #0A0F17;
---surface:       #FFFFFF;
---surface-dark:  #111827;
---surface-muted: #F1F5F9;
---surface-muted-dark: #1E293B;
---surface-elevated: #FFFFFF;
---surface-elevated-dark: #1F2937;
+All active design specifications live in:
 
-/* Brand (forest green primary) */
---green-700:     #15803d;
---green-100:     #DCFCE7;
---green-dark:    #34D399;
+- **Master specification:** `design-system/brandcore/MASTER.md`
+- **Page-specific overrides:** `design-system/brandcore/pages/`
+  - `dashboard.md` — Workspace Overview / Dashboard
+  - `content-review.md` — Content Review Workflow
+  - `approved-facts.md` — Approved Facts Management
+  - `evidence-library.md` — Evidence Library
+  - `brand-policies.md` — Brand Policies Management
+  - `terminology.md` — Terminology Management
+  - `release-passports.md` — Release Passports / Release Governance
+  - `workspace-settings.md` — Workspace Settings
+  - `authentication.md` — Sign-in / Sign-up (Clerk)
+  - `loading-states.md` — Skeleton Loading System
+  - `error-pages.md` — HTTP Error Page System
 
-/* Slate (secondary text and borders) */
---slate-700:     #42556B;
---slate-600:     #5C6D80;
---slate-500:     #718197;
---slate-dark:    #94A3B8;
+### Light Mode Color Palette
 
-/* Border */
---border:        #DCE3EA;
---border-dark:   #334155;
+| Role | Hex | CSS Variable |
+|------|-----|--------------|
+| Primary | `#0F172A` | `--color-primary` |
+| On Primary | `#FFFFFF` | `--color-on-primary` |
+| Secondary | `#334155` | `--color-secondary` |
+| On Secondary | `#FFFFFF` | `--color-on-secondary` |
+| Accent/CTA | `#0369A1` | `--color-accent` |
+| On Accent/CTA | `#FFFFFF` | `--color-on-accent` |
+| Background | `#F8FAFC` | `--color-background` |
+| Foreground | `#020617` | `--color-foreground` |
+| Card | `#FFFFFF` | `--color-card` |
+| Card Foreground | `#020617` | `--color-card-foreground` |
+| Muted | `#E8ECF1` | `--color-muted` |
+| Muted Foreground | `#475569` | `--color-muted-foreground` |
+| Border | `#E2E8F0` | `--color-border` |
+| Destructive | `#DC2626` | `--color-destructive` |
+| On Destructive | `#FFFFFF` | `--color-on-destructive` |
+| Ring | `#0F172A` | `--color-ring` |
 
-/* Amber (stale, warning) */
---amber-700:     #986000;
---amber-100:     #FFF1CC;
---amber-dark:    #F0C674;
+### Dark Mode Color Palette
 
-/* Red (error, rejected, invalid) */
---red-700:       #B42318;
---red-100:       #FEE4E2;
---red-dark:      #E87A6E;
+| Role | Hex | CSS Variable |
+|------|-----|--------------|
+| Canvas | `#0A0E16` | `--color-canvas` |
+| Surface | `#121826` | `--color-surface` |
+| Surface Muted | `#182130` | `--color-surface-muted` |
+| Surface Elevated | `#1C2436` | `--color-surface-elevated` |
+| Primary | `#F8FAFC` | `--color-primary` |
+| On Primary | `#020617` | `--color-on-primary` |
+| Secondary | `#94A3B8` | `--color-secondary` |
+| On Secondary | `#020617` | `--color-on-secondary` |
+| Accent | `#38BDF8` | `--color-accent` |
+| On Accent | `#020617` | `--color-on-accent` |
+| Foreground | `#F8FAFC` | `--color-foreground` |
+| Muted Foreground | `#9CA3AF` | `--color-muted-foreground` |
+| Border | `#2A3346` | `--color-border` |
+| Destructive | `#F87171` | `--color-destructive` |
+| On Destructive | `#020617` | `--color-on-destructive` |
+| Ring | `#60A5FA` | `--color-ring` |
 
-/* Brand text (navy in light, neutral in dark) */
---brand-950:     #142235;
---brand-dark:    #F8FAFC;
-
-/* Text */
---text-primary:   #162638;
---text-primary-dark: #F8FAFC;
---text-secondary: #5C6D80;
---text-secondary-dark: #94A3B8;
-
-/* Focus ring */
---focus-ring:    #15803d;
-```
-
-**Contrast rule:** Check actual text/background contrast before shipping. Token names do not guarantee WCAG AA. Verify with a contrast checker.
-
----
-
-## 3. Typography
-
-**Font stack:** System UI font stack — `system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
-
-No custom web fonts in the initial build. Add a web font only via an ADR.
-
-| Scale | Size | Weight | Use |
-|-------|------|--------|-----|
-| `text-xs` | 12px | 400 | Metadata, timestamps, labels |
-| `text-sm` | 14px | 400 | Body text, table cells |
-| `text-base` | 16px | 400 | Primary body text |
-| `text-lg` | 18px | 600 | Section headings |
-| `text-xl` | 20px | 700 | Page headings |
-| `text-2xl` | 24px | 700 | Primary page title |
-
-Minimum body text: 14px. Minimum metadata: 12px.
+**Dark Mode Design Principles:**
+- Deep navy surfaces, not pure black — avoids visual heaviness
+- Layered surface hierarchy (canvas < surface < surface-muted < surface-elevated)
+- Subtle borders for separation, not excessive contrast
+- Improved muted text contrast for readability
+- Brighter focus ring for dark mode visibility
 
 ---
 
-## 4. Spacing Tokens
+## Typography
 
-Base unit: 4px.
+- **Heading Font:** Plus Jakarta Sans
+- **Body Font:** Plus Jakarta Sans
+- **Google Fonts:** `https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap`
 
-| Token | Value | Use |
-|-------|-------|-----|
-| `space-1` | 4px | Tight gaps |
-| `space-2` | 8px | Component internal padding |
-| `space-3` | 12px | Small gaps |
-| `space-4` | 16px | Standard gaps |
-| `space-6` | 24px | Section padding |
-| `space-8` | 32px | Large section gaps |
+### Style
 
-Page padding: desktop 24px, tablet 16px, mobile 12–16px.
+- **Name:** Accessible & Ethical
+- **WCAG Target:** 2.2 AA
+- **Key Effects:** Clear focus rings (3-4px), ARIA labels, skip links, responsive design, reduced motion, 44x44px touch targets
 
----
+### Design Dials
 
-## 5. Navigation and Application Layout
-
-```
-┌─────────────────────────────────────────────────────┐
-│  BRANDCORE                    [Workspace: Demo Brand] │  ← Top nav (surface bg, sticky, z-50)
-├──────────────┬──────────────────────────────────────┤
-│              │                                       │
-│  Sidebar     │  Main content area                    │
-│  (256px /    │  (flex-1, canvas bg, offset for       │
-│   80px)      │   sidebar width)                      │
-│              │                                       │
-│  - Facts     │                                       │
-│  - Content   │                                       │
-│  - Releases  │                                       │
-│  - Evidence  │                                       │
-└──────────────┴──────────────────────────────────────┘
-```
-
-- Top nav: `surface` background, sticky, `border-b`, workspace context, theme toggle, Clerk auth controls (z-50)
-- Sidebar: `surface` background, `border-r`, collapsible (256px expanded / 80px collapsed), icon-only when collapsed with tooltips (z-40)
-- Active nav item: `bg-green-100` (light) / `bg-green-900/20` (dark), `text-green-700` (light) / `text-green-400` (dark)
-- Main content: `canvas` background, padding offset for sidebar width (`md:pl-64` expanded / `md:pl-20` collapsed, `pl-4` mobile)
-- Mobile: hamburger toggle (z-50) opens overlay drawer with backdrop, escape-to-close, body scroll locked
-
-**Sidebar collapse:** Preference persisted in `localStorage` under `brandcore-sidebar-collapsed`. No layout flash on init. Collapse toggle has `aria-expanded`, `aria-controls`, accessible name.
+- Variance: 4/10 (Balanced / Modern)
+- Motion: 3/10 (Subtle)
+- Density: 5/10 (Standard)
 
 ---
 
-## 6. Stacking Context (z-index)
+## Border Radius Tokens
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--radius-sm` | `8px` | Small elements, badges |
+| `--radius` | `12px` | Default, form inputs, select controls |
+| `--radius-md` | `16px` | Primary buttons, secondary buttons, dropdowns, sidebar nav items |
+| `--radius-lg` | `20px` | Cards, elevated panels |
+| `--radius-xl` | `24px` | Dialogs, modals |
+| `--radius-full` | `9999px` | Pills, circular buttons, avatars |
+| `--radius-circular` | `50%` | Perfect circles (menu button) |
+
+**Component Radius Mapping:**
+
+| Component | Radius | Value |
+|-----------|--------|-------|
+| Cards | `--radius-lg` | 20px |
+| Primary buttons | `--radius-md` | 16px |
+| Secondary buttons | `--radius-md` | 16px |
+| Text inputs | `--radius` | 12px |
+| Select controls | `--radius` | 12px |
+| Dialogs | `--radius-xl` | 24px |
+| Dropdowns | `--radius-md` | 16px |
+| Sidebar navigation items | `--radius-md` | 16px |
+| Badges | `--radius-full` or `--radius` | pill or compact |
+| Menu button | `--radius-circular` | 50% (perfect circle, 44px) |
+
+---
+
+## Navigation and Application Layout
+
+The application shell consists of:
+- **TopBar:** Sticky header with workspace identity, backend status, theme toggle, Clerk auth controls
+- **Sidebar:** Collapsible navigation (256px expanded / 72px collapsed), active state indicators
+- **MainContent:** Flex-1 content area with sidebar offset
+- **MobileNavigation:** Overlay drawer with Escape-to-close and backdrop click
+
+### Stacking Context (z-index)
 
 | Layer | z-index | Use |
 |-------|---------|-----|
 | Base content | 0 | Page content |
 | Sidebar | 40 | Fixed sidebar (desktop) |
-| Top bar | 50 | Sticky header (above sidebar) |
-| Mobile hamburger | 50 | Fixed toggle button |
-| Mobile backdrop | 50 | Drawer backdrop |
-| Drawer (mobile) | 50 | Mobile navigation drawer |
-| Modals/dialogs | 50 | Overlay dialogs |
+| Top bar | 50 | Sticky header |
+| Dropdown | 20 | Dropdown menus |
+| Popover | 30 | Popovers |
+| Drawer | 40 | Drawers |
+| Modal | 50 | Modals/dialogs |
+| Toast | 60 | Toast notifications |
+| Tooltip | 70 | Tooltips |
 
 Do not use arbitrary `z-index: 9999`. Use the established layers above.
 
 ---
 
-## 7. Core Components
+## Menu Button (Circular Hamburger)
+
+| Property | Value |
+|----------|-------|
+| Shape | Perfect circle |
+| Width / Height | 44px |
+| Border radius | 50% |
+| Icon | Menu (three horizontal lines) |
+| Icon size | 24px |
+| Alignment | Centered (flex items-center justify-center) |
+| Padding | 0 |
+| Placement | Top navigation bar, immediately before BRANDCORE logo |
+| Desktop behavior | Toggles sidebar collapse/expand (hamburger icon in both states) |
+| Mobile behavior | Toggles drawer open/close (hamburger when closed, X when open) |
+
+---
+
+## Core Components
+
+All shared components live in `src/components/ui/`:
+- Button, Card, DataTable, EmptyState, ErrorState, FormField, Skeleton, StatusBadge, ThemeToggle, ThemeProvider
+- Layout: AppShell, Sidebar, TopBar, Breadcrumbs, PageHeader
 
 ### Status Badge
 
-Used for release status, finding severity and review decisions.
-
 | Status | Light BG | Light Text | Dark BG | Dark Text |
 |--------|----------|------------|---------|-----------|
-| VALID / Approved | `bg-green-100` | `text-green-700` | `bg-green-900/20` | `text-green-400` |
-| STALE | `bg-amber-100` | `text-amber-700` | `bg-amber-900/20` | `text-amber-400` |
-| REVOKED / Rejected | `bg-red-100` | `text-red-700` | `bg-red-900/20` | `text-red-400` |
-| INVALID | `bg-red-100` | `text-red-700` | `bg-red-900/20` | `text-red-400` |
+| Valid / Approved | `bg-green-100` | `text-green-700` | `bg-green-900/20` | `text-green-400` |
+| Stale | `bg-amber-100` | `text-amber-700` | `bg-amber-900/20` | `text-amber-400` |
+| Revoked / Rejected / Invalid | `bg-red-100` | `text-red-700` | `bg-red-900/20` | `text-red-400` |
 | Pending | `bg-surface-muted` | `text-slate-700` | `bg-surface-muted` | `text-slate-500` |
 
 Always include a text label alongside color. Never use color as the only signal.
@@ -202,46 +209,23 @@ Always include a text label alongside color. Never use color as the only signal.
 
 | Variant | Background | Text | Hover | Focus |
 |---------|-----------|------|-------|-------|
-| Primary | `bg-green-700` | white | `bg-green-800` | `ring-green-700` |
-| Secondary | `bg-surface` | `text-text-primary` | `bg-surface-muted` | `ring-slate-700` |
-| Danger | `bg-red-700` | white | `bg-red-800` | `ring-red-700` |
-| Ghost | transparent | `text-text-secondary` | `bg-surface-muted` | `ring-slate-700` |
+| Primary | `bg-primary` | `text-on-primary` | `bg-primary/90` | `ring-ring` |
+| Accent | `bg-accent` | `text-on-accent` | `bg-accent/90` | `ring-ring` |
+| Secondary | `bg-surface` | `text-foreground` | `bg-surface-muted` | `ring-ring` |
+| Danger | `bg-destructive` | `text-on-destructive` | `bg-destructive/90` | `ring-ring` |
+| Ghost | transparent | `text-muted-foreground` | `bg-surface-muted` | `ring-ring` |
 
-### Finding Card
-
-```
-┌─────────────────────────────────────────────────────┐
-│  [Finding Type Badge]  Unsupported claim             │
-│  ─────────────────────────────────────────────────  │
-│  Affected text: "Our product reduces costs by 40%"  │
-│  Reason: No approved evidence reference found        │
-│  Evidence: —                                         │
-│  Suggestion: Add evidence reference or qualify claim │
-└─────────────────────────────────────────────────────┘
-```
+All buttons use `--radius-md` (16px) and focus-ring with `--color-ring`.
 
 ---
 
-## 8. Component States
+## Component States
 
-Every interactive component must have all applicable states:
-
-| State | Visual Treatment |
-|-------|-----------------|
-| Default | As defined in component spec |
-| Hover | Slightly darker background (5% darken) |
-| Focus-visible | `focus-ring` (#15803d) 2px outline, 2px offset |
-| Disabled | `opacity-50`, `pointer-events-none`, `cursor-not-allowed` |
-| Loading | Spinner or skeleton; no content shift |
-| Empty | Descriptive empty state with action if applicable |
-| Error | `border-red-100`/`dark:border-red-800/30`, `bg-red-50`/`dark:bg-red-900/20`, error icon, description |
-| Success | `bg-green-100`/`dark:bg-green-900/20`, `text-green-700`/`dark:text-green-400`, success icon |
-
-Every screen must have loading, empty, error and success states.
+Every interactive component must have all applicable states: Default, Hover, Focus-visible, Disabled, Loading, Empty, Error, Success.
 
 ---
 
-## 9. WCAG 2.2 AA Target
+## WCAG 2.2 AA Target
 
 - All text meets 4.5:1 contrast ratio (3:1 for large text ≥18px or bold ≥14px).
 - Every interactive element is keyboard accessible with visible focus indicator.
@@ -256,134 +240,44 @@ Verify with axe on the deployed build. Do not claim WCAG AA compliance until ver
 
 ---
 
-## 10. Responsive Behavior
+## Responsive Behavior
 
 | Breakpoint | Width | Layout |
 |-----------|-------|--------|
-| Mobile | < 768px | Single column; hamburger toggle opens overlay drawer; sidebar hidden |
-| Tablet | ≥ 768px | Sidebar 256px; main content flex-1 |
-| Desktop | > 1024px | Sidebar 256px; main content flex-1 |
+| Mobile | < 1024px | Sidebar hidden from grid; hamburger menu controls overlay drawer |
+| Desktop | ≥ 1024px | Sidebar 256px expanded / 72px collapsed; hamburger toggles collapse |
 
-Sidebar collapsed width: 80px (icon only, tooltips on hover).
-Content offset: `md:pl-64` expanded / `md:pl-20` collapsed; `pl-4` on mobile.
+Sidebar collapsed width: 72px (icon only, tooltips on hover).
+Sidebar expanded width: 256px (icons + labels).
+Page horizontal padding: 28px to 32px (px-6 md:px-8 lg:px-10).
 
 ---
 
-## 11. Dark Mode
+## Dark Mode
 
 - **Theme provider:** Centralized `ThemeProvider` with class-based dark mode (`dark` class on `document.documentElement`)
 - **Persistence:** `localStorage` key `brandcore-theme`
 - **System preference:** `prefers-color-scheme` respected when no manual preference
 - **Initialization:** Theme applied before UI renders via `ThemeProvider` — no flash of incorrect theme
-- **Theme toggle:** Working toggle in main navigation (TopBar)
+- **Theme toggle:** Working toggle in main navigation (TopBar), 44px circular button matching menu button
 - **Consistency:** Dark mode applied across every page, dialog, dropdown, and Clerk component
 - **No CSS inversion:** Semantic tokens used, not `invert()` or `filter`
+- **Deep navy surfaces:** Canvas `#0A0E16`, surface `#121826`, border `#2A3346` — layered, not flat black
 
 ---
 
-## 12. Motion Rules
+## Motion Rules
 
 - All transitions and animations use `ease-out` or `ease-in-out` timing
 - Sidebar collapse/expand: `duration-300 ease-in-out` on width and transform
 - Mobile drawer slide: `duration-300 ease-in-out` on transform
 - Fade-in for page content: `duration-200 ease-out`
 - No animated backgrounds, marquee text, or decorative motion
-- **`prefers-reduced-motion: reduce`:** All animations and transitions are reduced to 0.01ms duration (see `src/styles.css`)
+- `prefers-reduced-motion: reduce`: All animations reduced to 0.01ms duration
 
 ---
 
-## 13. Workspace Onboarding
-
-When a signed-in Clerk user has an active Organization but no BRANDCORE workspace mapping:
-
-**Organization Admin/Owner:**
-- Presented with a "Create Workspace" action
-- Can enter a workspace display name and optional slug
-- Provisions workspace via protected backend POST `/api/workspaces/provision`
-- Uses verified Clerk organization ID
-- Mapping created atomically and idempotently
-- Shows success state and reloads into the new workspace
-
-**Organization Member:**
-- Informed that an organization administrator needs to set up the workspace
-- No administrator-only creation action shown
-- Directed to ask an admin, then refresh
-
-**Backend unavailable:** Retryable service error shown, not "no workspace access"
-
-**Organization unauthorized:** Access-denied state shown
-
-Never automatically maps to `ws_demo`. Never hardcodes workspace IDs. Never bypasses Clerk verification or backend authorization.
-
----
-
-## 14. Backend Status Indicator
-
-Explicit statuses with no indefinite "Connecting" state:
-
-| Status | Meaning | User Action |
-|--------|---------|-------------|
-| `checking` | Initial health check in progress | None — transient |
-| `connected` | Backend reachable | None |
-| `offline` | Backend unreachable | Retry action available |
-| `unavailable` | Backend misconfigured | Retry action available |
-
-- Health check polls every 30 seconds
-- 401/403 responses are treated as `connected` (auth error, not backend offline)
-- Failed health requests reach a final state with retry action
-- Backend availability is separate from authentication status
-- Interval cleaned up on component unmount
-- No duplicate health requests
-
----
-
-## 15. Authentication UI States
-
-| Auth state | UI behavior |
-|------------|-------------|
-| Clerk loading | "Signing in…" state, no API calls |
-| Signed out | Sign-in / Sign up buttons shown |
-| Signed in, no org | "No active organization" state, select org via Clerk |
-| Signed in, org no workspace | "No workspace access" state |
-| Authenticated, workspace ready | Full application with workspace data |
-| 401 response | "Session expired. Please sign in again." — no silent demo fallback |
-| 403 response | "You do not have access to this workspace." — no silent demo fallback |
-
-Demo mode (backend endpoints unavailable but auth valid): Clearly labeled amber banner, fictional data, no changes persisted.
-
----
-
-## 16. API Loading and Error States
-
-| API result | UI behavior |
-|------------|-------------|
-| Loading | Skeleton or progress indicator |
-| 200 | Display actual returned data |
-| Empty result | Contextual empty state |
-| 401 | Sign-in / session-expired state |
-| 403 | Access denied |
-| 404 | Resource not found |
-| 422 | Validation errors |
-| 500 | Recoverable service error and retry |
-
-Prevent duplicate requests caused by repeated component renders. Do not hide backend failures. Do not silently replace live data with mocks.
-
----
-
-## 17. Performance Budget
-
-| Metric | Target | Status |
-|--------|--------|--------|
-| Initial route JS | ≤ 170 KB compressed | NOT MEASURED |
-| LCP (mobile) | ≤ 2.5 s | NOT MEASURED |
-| INP (mobile) | ≤ 200 ms | NOT MEASURED |
-| CLS (mobile) | ≤ 0.1 | NOT MEASURED |
-
-Measure on the deployed build. If the JS budget is exceeded, document an ADR with justification.
-
----
-
-## 18. What Not to Do
+## What Not to Do
 
 - No generic compliance score widget
 - No elaborate onboarding animations
@@ -394,15 +288,10 @@ Measure on the deployed build. If the JS budget is exceeded, document an ADR wit
 - No `z-index: 9999` — use established stacking layers
 - No hardcoded workspace IDs (`ws_demo`) — workspace resolved from Clerk org context
 - No silent demo fallback on auth errors (401/403)
-
----
-
-## 19. Component Ownership
-
-- **Shared design system:** All components in `src/components/ui/` and `src/components/layout/`
-- **Sidebar and application shell:** Shared, used by all pages
-- **Theme architecture:** Shared `ThemeProvider`, `ThemeToggle`
-- **Content Review (Rahul):** May redesign page layouts, introduce new components, improve forms/modals within shared design system
-- **Brand Governance and Release Governance (Arvind):** May redesign page layouts, introduce new components, improve forms/modals within shared design system
-
-Rahul and Arvind have creative freedom within their assigned screens. Do not overwrite their changes or duplicate their work.
+- No emojis as icons — use SVG icons
+- No AI purple/pink gradients
+- No playful design
+- No layout-shifting hovers
+- No invisible focus states
+- No CSS filters to generate dark mode
+- No excessively bright surface differences in dark mode

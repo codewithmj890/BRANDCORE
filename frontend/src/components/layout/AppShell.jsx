@@ -15,6 +15,10 @@ import { TopBar } from './TopBar'
 export function AppShell({ workspace, backendStatus, children, header }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return window.innerWidth >= 1024
+  })
 
   // Persist collapse preference (avoid hydration flash by defaulting to expanded)
   useEffect(() => {
@@ -30,22 +34,42 @@ export function AppShell({ workspace, backendStatus, children, header }) {
     localStorage.setItem('brandcore-sidebar-collapsed', String(sidebarCollapsed))
   }, [sidebarCollapsed])
 
+  // Detect desktop breakpoint (lg = 1024px) for hamburger behavior:
+  // desktop toggles sidebar collapse, mobile/tablet opens/closes drawer
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsDesktop(window.innerWidth >= 1024)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   const sidebarWidth = sidebarCollapsed ? '72px' : '256px'
+
+  const handleHamburgerClick = () => {
+    if (sidebarOpen) {
+      setSidebarOpen(false)
+    } else if (isDesktop) {
+      setSidebarCollapsed((prev) => !prev)
+    } else {
+      setSidebarOpen(true)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-canvas text-foreground dark:text-foreground-dark flex flex-col overflow-x-hidden">
       <TopBar
         workspace={workspace}
         backendStatus={backendStatus}
-        onSidebarToggle={() => setSidebarCollapsed((prev) => !prev)}
-        onDrawerToggle={() => setSidebarOpen((prev) => !prev)}
+        onSidebarToggle={handleHamburgerClick}
         isDrawerOpen={sidebarOpen}
         isSidebarCollapsed={sidebarCollapsed}
+        isDesktop={isDesktop}
       />
 
       <div
         className="flex-1 min-w-0 grid overflow-hidden"
-        style={{ gridTemplateColumns: `${sidebarWidth} 1fr` }}
+        style={{ gridTemplateColumns: isDesktop ? `${sidebarWidth} 1fr` : '1fr' }}
       >
         {/* Desktop sidebar — grid column, hidden on mobile */}
         <Sidebar

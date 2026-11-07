@@ -27,6 +27,12 @@ export default {
         destructive: 'var(--color-destructive)',
         'on-destructive': 'var(--color-on-destructive)',
         ring: 'var(--color-ring)',
+        success: 'var(--color-success)',
+        'success-light': 'var(--color-success-light)',
+        'success-dark': 'var(--color-success-dark)',
+        warning: 'var(--color-warning)',
+        'warning-light': 'var(--color-warning-light)',
+        'warning-dark': 'var(--color-warning-dark)',
         // Semantic status (kept for status badges, alerts)
         green: {
           700: '#15803d',
@@ -71,6 +77,7 @@ export default {
         DEFAULT: 'var(--radius)',
         md: 'var(--radius-md)',
         lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
         full: 'var(--radius-full)',
       },
       boxShadow: {

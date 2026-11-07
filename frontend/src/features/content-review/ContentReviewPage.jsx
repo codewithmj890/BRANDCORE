@@ -45,9 +45,11 @@ export default function ContentReviewPage() {
   const fetchContentVersions = useCallback(async () => {
     if (!workspaceId || !contentItemId || authStatus !== 'ready') {
       setVersionLoading(false)
+      setLoading(false)
       return
     }
 
+    setLoading(true)
     setVersionLoading(true)
     try {
       const data = await api.getContentVersions(workspaceId, contentItemId)
@@ -66,6 +68,7 @@ export default function ContentReviewPage() {
       }
     } finally {
       setVersionLoading(false)
+      setLoading(false)
     }
   }, [workspaceId, contentItemId, authStatus])
 

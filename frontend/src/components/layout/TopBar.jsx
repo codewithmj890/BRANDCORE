@@ -1,12 +1,15 @@
 /**
  * BRANDCORE — Top Bar
- * Application header with hamburger menu, brand, workspace context,
+ * Application header with circular hamburger menu, brand, workspace context,
  * backend status, theme toggle, and user controls. Uses Clerk for authentication.
+ *
+ * The circular hamburger button (44px) sits immediately before the BRANDCORE
+ * logo and controls sidebar collapse on desktop and drawer open/close on mobile.
  */
 import { UserButton, OrganizationSwitcher, useAuth } from '@clerk/react'
 import { ThemeToggle } from '../ui/theme/ThemeToggle'
 
-export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerToggle, isDrawerOpen, isSidebarCollapsed }) {
+export function TopBar({ workspace, backendStatus, onSidebarToggle, isDrawerOpen, isSidebarCollapsed, isDesktop }) {
   const { isSignedIn } = useAuth()
 
   const statusColors = {
@@ -30,7 +33,7 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerTogg
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="w-5 h-5"
+      className="w-6 h-6"
     >
       <line x1="3" y1="12" x2="21" y2="12" />
       <line x1="3" y1="6" x2="21" y2="6" />
@@ -47,94 +50,43 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerTogg
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="w-5 h-5"
+      className="w-6 h-6"
     >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   )
 
-  const CHEVRON_LEFT_ICON = (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="w-5 h-5"
-    >
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  )
-
-  const CHEVRON_RIGHT_ICON = (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="w-5 h-5"
-    >
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  )
-
   return (
     <header
-      className="sticky top-0 z-50 border-b border-border bg-surface"
+      className="sticky top-0 z-[60] border-b border-border bg-surface"
     >
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
-          {/* Hamburger menu — mobile drawer control */}
+          {/* Circular hamburger menu button — controls sidebar (desktop) and drawer (mobile) */}
           <button
             type="button"
-            onClick={onDrawerToggle}
-            aria-label={isDrawerOpen ? 'Close navigation' : 'Open navigation'}
-            aria-expanded={isDrawerOpen}
+            onClick={onSidebarToggle}
+            aria-label={isDesktop
+              ? (isSidebarCollapsed ? 'Open navigation' : 'Close navigation')
+              : (isDrawerOpen ? 'Close navigation' : 'Open navigation')}
+            aria-expanded={isDesktop ? !isSidebarCollapsed : !isDrawerOpen}
             className="
               inline-flex items-center justify-center
-              w-9 h-9 rounded-lg
+              w-11 h-11 rounded-full
               bg-surface border border-border
               text-muted-foreground hover:text-foreground hover:bg-surface-muted
               focus-ring
               transition-colors
-              lg:hidden
             "
           >
-            <span className="sr-only">Toggle navigation</span>
+            <span className="sr-only">Toggle navigation sidebar</span>
             {isDrawerOpen ? CLOSE_ICON : HAMBURGER_ICON}
           </button>
 
-          {/* Desktop sidebar collapse toggle */}
-          {isSignedIn && (
-            <button
-              type="button"
-              onClick={onSidebarToggle}
-              aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              aria-expanded={!isSidebarCollapsed}
-              className="
-                inline-flex items-center justify-center
-                w-9 h-9 rounded-lg
-                bg-surface border border-border
-                text-muted-foreground hover:text-foreground hover:bg-surface-muted
-                focus-ring
-              transition-colors
-              hidden lg:block
-            "
-          >
-            <span className="sr-only">Toggle sidebar</span>
-            {isSidebarCollapsed ? CHEVRON_RIGHT_ICON : CHEVRON_LEFT_ICON}
-            </button>
-          )}
-
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center text-on-accent font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-on-accent font-bold text-xl">
                 B
               </div>
               <span className="font-bold text-lg text-foreground dark:text-foreground-dark tracking-tight">

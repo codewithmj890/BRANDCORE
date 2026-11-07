@@ -46,7 +46,7 @@ export function ThemeToggle() {
       aria-pressed={isDark}
       className="
         inline-flex items-center justify-center
-        w-9 h-9 rounded-full
+        w-11 h-11 rounded-full
         bg-surface border border-border
         text-muted-foreground hover:text-foreground
         hover:bg-surface-muted
