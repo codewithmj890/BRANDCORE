@@ -15,12 +15,40 @@ import { useEffect, useCallback } from 'react'
 const COLLAPSED_WIDTH = 'w-20'   // 72px — icon only
 const EXPANDED_WIDTH = 'w-64'    // 256px — icons + labels
 
+const ICONS = {
+  overview: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <circle cx="12" cy="12" r="10" /><line x1="12" y1="2" x2="12" y2="22" /><line x1="2" y1="12" x2="22" y2="12" />
+    </svg>
+  ),
+  facts: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M9 11l3-3L21 12l-9 9M7 11h10" />
+    </svg>
+  ),
+  content: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><polyline points="14 16 14 22 10 22" />
+    </svg>
+  ),
+  releases: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M15 18V6l3 7-4 3-11-4L2 12Z" />
+    </svg>
+  ),
+  evidence: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <circle cx="12" cy="12" r="4" /><path d="M7 12h10M12 7v10" />
+    </svg>
+  ),
+}
+
 const NAV_ITEMS = [
-  { id: 'overview', label: 'Overview', icon: 'O' },
-  { id: 'facts', label: 'Approved Facts', icon: 'F' },
-  { id: 'content', label: 'Content Review', icon: 'C' },
-  { id: 'releases', label: 'Releases', icon: 'R' },
-  { id: 'evidence', label: 'Evidence Library', icon: 'E' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'facts', label: 'Approved Facts' },
+  { id: 'content', label: 'Content Review' },
+  { id: 'releases', label: 'Releases' },
+  { id: 'evidence', label: 'Evidence Library' },
 ]
 
 export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose, className }) {
@@ -61,6 +89,7 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
           <nav className="px-3 py-5">
             {NAV_ITEMS.map((item) => {
               const isActive = activeItem === item.id
+              const Icon = ICONS[item.id]
               return (
                 <button
                   key={item.id}
@@ -78,13 +107,13 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
                 >
                   <span
                     className={
-                      'w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs transition-all ' +
+                      'w-6 h-6 rounded-md flex items-center justify-center transition-all ' +
                       (isActive
                         ? 'bg-accent text-on-accent'
                         : 'bg-surface-muted text-muted-foreground border border-border')
                     }
                   >
-                    {item.icon}
+                    {Icon}
                   </span>
                   {!isCollapsed && <span className="text-foreground dark:text-foreground-dark">{item.label}</span>}
                 </button>
@@ -114,6 +143,7 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
               <nav className="px-4 py-6">
                 {NAV_ITEMS.map((item) => {
                   const isActive = activeItem === item.id
+                  const Icon = ICONS[item.id]
                   return (
                     <button
                       key={item.id}
@@ -131,13 +161,13 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
                     >
                       <span
                         className={
-                          'w-7 h-7 rounded-md flex items-center justify-center font-bold text-sm transition-colors ' +
+                          'w-7 h-7 rounded-md flex items-center justify-center transition-colors ' +
                           (isActive
                             ? 'bg-accent text-on-accent'
                             : 'bg-surface-muted text-muted-foreground border border-border')
                         }
                       >
-                        {item.icon}
+                        {Icon}
                       </span>
                       <span className="text-foreground dark:text-foreground-dark">{item.label}</span>
                     </button>
@@ -157,6 +187,8 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   className="w-4 h-4"
                 >
                   <line x1="18" y1="6" x2="6" y2="18" />

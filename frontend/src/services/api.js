@@ -243,4 +243,10 @@ export const api = {
 
   provisionWorkspace: (name, slug) =>
     protectedRequest('POST', '/workspaces/provision', { name, slug }),
+
+  getEvidence: (workspaceId) =>
+    protectedRequest('GET', `/workspaces/${workspaceId}/evidence`),
+
+  getEvidenceItem: (workspaceId, evidenceId) =>
+    protectedRequest('GET', `/workspaces/${workspaceId}/evidence/${evidenceId}`),
 }

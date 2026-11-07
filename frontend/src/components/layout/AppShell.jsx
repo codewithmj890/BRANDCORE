@@ -59,12 +59,12 @@ export function AppShell({ workspace, backendStatus, children, header }) {
           isCollapsed={sidebarCollapsed}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          className="hidden md:block"
+          className="hidden lg:block"
         />
 
         {/* Main content — scroll container, fills remaining grid space */}
         <main
-          className="flex-1 min-w-0 overflow-y-auto md:pt-6 lg:pt-8"
+          className="flex-1 min-w-0 overflow-y-auto md:pt-6 lg:pt-8 px-6 md:px-8 lg:px-10"
         >
           {children}
         </main>

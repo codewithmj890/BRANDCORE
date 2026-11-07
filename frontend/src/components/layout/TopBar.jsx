@@ -21,7 +21,7 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerTogg
     offline: 'Backend offline',
   }
 
-  const MENU_ICON = (
+  const HAMBURGER_ICON = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
@@ -54,17 +54,47 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerTogg
     </svg>
   )
 
+  const CHEVRON_LEFT_ICON = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+    >
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  )
+
+  const CHEVRON_RIGHT_ICON = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+
   return (
     <header
       className="sticky top-0 z-50 border-b border-border bg-surface"
     >
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
-          {/* Hamburger menu — centralized navigation control */}
+          {/* Hamburger menu — mobile drawer control */}
           <button
             type="button"
             onClick={onDrawerToggle}
-            aria-label="Toggle navigation menu"
+            aria-label={isDrawerOpen ? 'Close navigation' : 'Open navigation'}
             aria-expanded={isDrawerOpen}
             className="
               inline-flex items-center justify-center
@@ -73,14 +103,14 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerTogg
               text-muted-foreground hover:text-foreground hover:bg-surface-muted
               focus-ring
               transition-colors
-              md:hidden
+              lg:hidden
             "
           >
             <span className="sr-only">Toggle navigation</span>
-            {isDrawerOpen ? CLOSE_ICON : MENU_ICON}
+            {isDrawerOpen ? CLOSE_ICON : HAMBURGER_ICON}
           </button>
 
-          {/* Desktop sidebar collapse toggle — same hamburger button, different behavior */}
+          {/* Desktop sidebar collapse toggle */}
           {isSignedIn && (
             <button
               type="button"
@@ -93,12 +123,12 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerTogg
                 bg-surface border border-border
                 text-muted-foreground hover:text-foreground hover:bg-surface-muted
                 focus-ring
-                transition-colors
-                hidden md:block
-              "
-            >
-              <span className="sr-only">Toggle sidebar</span>
-              {isSidebarCollapsed ? MENU_ICON : CLOSE_ICON}
+              transition-colors
+              hidden lg:block
+            "
+          >
+            <span className="sr-only">Toggle sidebar</span>
+            {isSidebarCollapsed ? CHEVRON_RIGHT_ICON : CHEVRON_LEFT_ICON}
             </button>
           )}
 
@@ -114,8 +144,8 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerTogg
 
             <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-muted dark:bg-surface-muted-dark border border-border text-xs font-medium text-muted-foreground">
               <span className="w-2 h-2 rounded-full bg-success" />
-              <span className="text-muted-foreground-dark">Workspace: </span>
-              <span className="text-foreground dark:text-foreground-dark">{workspace?.name || '—'}</span>
+              <span className="text-muted-foreground-dark">Workspace:</span>
+              <span className="text-foreground dark:text-foreground-dark ml-1">{workspace?.name || '—'}</span>
             </div>
           </div>
         </div>
@@ -134,13 +164,19 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, onDrawerTogg
 
           {isSignedIn ? (
             <>
-              <OrganizationSwitcher
-                appearance={{
-                  elements: {
-                    organizationSwitcherTrigger: 'bg-surface border border-border text-foreground dark:text-foreground-dark hover:text-accent hover:bg-surface-muted focus-ring-ring focus:ring-2 rounded-md px-2 py-1',
-                  },
-                }}
-              />
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-muted dark:bg-surface-muted-dark border border-border text-xs font-medium text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-secondary" />
+                <span className="text-muted-foreground-dark">Organization:</span>
+                <OrganizationSwitcher
+                  appearance={{
+                    elements: {
+                      organizationSwitcherTrigger: 'bg-transparent border-none text-foreground dark:text-foreground-dark hover:text-accent focus:ring-0 p-0',
+                      organizationSwitcherMenu: 'bg-surface border border-border shadow-lg',
+                      organizationSwitcherMenuItem: 'text-muted-foreground hover:text-accent dark:hover:text-accent hover:bg-accent/10 dark:hover:bg-accent/10',
+                    },
+                  }}
+                />
+              </div>
               <UserButton
                 afterSignOutUrl="/"
                 appearance={{

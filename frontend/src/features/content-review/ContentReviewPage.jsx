@@ -31,6 +31,7 @@ import { USE_MOCK_API } from './contentReviewApi.js'
 
 export default function ContentReviewPage() {
   const { workspaceId, authStatus } = useWorkspace()
+  const [contentItemId, setContentItemId] = useState(null)
   const [contentVersions, setContentVersions] = useState([])
   const [submission, setSubmission] = useState(null)
   const [findings, setFindings] = useState([])
@@ -42,16 +43,14 @@ export default function ContentReviewPage() {
   const [versionLoading, setVersionLoading] = useState(false)
 
   const fetchContentVersions = useCallback(async () => {
-    if (!workspaceId || authStatus !== 'ready') {
-      setLoading(false)
+    if (!workspaceId || !contentItemId || authStatus !== 'ready') {
+      setVersionLoading(false)
       return
     }
 
-    setLoading(true)
-    setError(null)
     setVersionLoading(true)
     try {
-      const data = await api.getContentVersions(workspaceId, 'ci_demo')
+      const data = await api.getContentVersions(workspaceId, contentItemId)
       setContentVersions(data.versions || [])
       setError(null)
     } catch (err) {
@@ -60,15 +59,15 @@ export default function ContentReviewPage() {
           ? 'Session expired. Please sign in again.'
           : 'You do not have access to this workspace.')
       } else if (err.status === 404) {
-        setError('Content versions not found for this workspace.')
+        // Content item doesn't exist yet — this is an empty state, not an error
+        setContentVersions([])
       } else {
         setError('Unable to load content versions. Please try again.')
       }
     } finally {
-      setLoading(false)
       setVersionLoading(false)
     }
-  }, [workspaceId, authStatus])
+  }, [workspaceId, contentItemId, authStatus])
 
   useEffect(() => {
     fetchContentVersions()
@@ -76,6 +75,7 @@ export default function ContentReviewPage() {
 
   const handleSubmitted = useCallback((result) => {
     setSubmission(result)
+    setContentItemId(result.content_item_id)
     setReviewResult(null)
     setReviewError(null)
     setAnalysisLoading(true)
@@ -149,7 +149,7 @@ export default function ContentReviewPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Content Review" description="Submit content for review, examine AI-extracted claims and verification findings, and record review decisions." />
-        <ErrorState message={error || 'Unable to load content versions'} onRetry={fetchContentVersions} />
+        <ErrorState message={error || 'Unable to load content versions'} onRetry={() => {}} />
       </div>
     )
   }
@@ -185,7 +185,7 @@ export default function ContentReviewPage() {
         </Card>
       )}
 
-      {!error && (
+      {!error && !submission && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <Card>
@@ -202,69 +202,81 @@ export default function ContentReviewPage() {
           </div>
 
           <div className="lg:col-span-2">
-            {!submission && (
-              <div className="flex flex-col items-center justify-center h-full">
-                <EmptyState
-                  title="No content submitted"
-                  description="Submit your first content item to begin the review workflow."
-                />
-              </div>
-            )}
-            {submission && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Content Versions</CardTitle>
-                  </CardHeader>
-                  <CardBody>
-                    {contentVersions.length === 0 ? (
-                      <EmptyState
-                        title="No versions yet"
-                        description="Submit content to create your first version."
-                      />
-                    ) : (
-                      <VersionHistory
-                        versions={contentVersions}
-                        loading={versionLoading}
-                        error={null}
-                      />
-                    )}
-                  </CardBody>
-                </Card>
+            <div className="flex flex-col items-center justify-center h-full">
+              <EmptyState
+                title="No content submitted yet"
+                description="Submit your first content item to begin the review workflow. Once submitted, content becomes an immutable version."
+                action={
+                  <Button variant="primary" size="sm" onClick={() => setSubmission(null)}>
+                    Submit your first content
+                  </Button>
+                }
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Analysis Findings</CardTitle>
-                  </CardHeader>
-                  <CardBody>
-                    <FindingsPanel
-                      findings={findings}
-                      loading={analysisLoading}
-                      error={reviewError}
-                    />
-                  </CardBody>
-                </Card>
-
-                {findings.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Reviewer Decision</CardTitle>
-                    </CardHeader>
-                    <CardBody>
-                      <ReviewDecisionForm
-                        onSubmit={handleReview}
-                        disabled={!!reviewResult}
-                        result={reviewResult}
-                      />
-                      {reviewError && (
-                        <p role="alert" className="mt-3 rounded-md border border-red-700/30 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
-                          {reviewError}
-                        </p>
-                      )}
-                    </CardBody>
-                  </Card>
+      {submission && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Versions</CardTitle>
+              </CardHeader>
+              <CardBody>
+                {versionLoading && !contentVersions.length ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <SkeletonRow className="mb-4" />
+                    <Skeleton width="60%" height="16px" />
+                    <Skeleton width="40%" height="16px" className="mt-2" />
+                  </div>
+                ) : contentVersions.length === 0 ? (
+                  <EmptyState
+                    title="No versions yet"
+                    description="Submit content to create your first version."
+                  />
+                ) : (
+                  <VersionHistory
+                    versions={contentVersions}
+                    loading={versionLoading}
+                    error={null}
+                  />
                 )}
-              </div>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Analysis Findings</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <FindingsPanel
+                  findings={findings}
+                  loading={analysisLoading}
+                  error={reviewError}
+                />
+              </CardBody>
+            </Card>
+
+            {findings.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Reviewer Decision</CardTitle>
+                </CardHeader>
+                <CardBody>
+                  <ReviewDecisionForm
+                    onSubmit={handleReview}
+                    disabled={!!reviewResult}
+                    result={reviewResult}
+                  />
+                  {reviewError && (
+                    <p role="alert" className="mt-3 rounded-md border border-red-700/30 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
+                      {reviewError}
+                    </p>
+                  )}
+                </CardBody>
+              </Card>
             )}
           </div>
         </div>
