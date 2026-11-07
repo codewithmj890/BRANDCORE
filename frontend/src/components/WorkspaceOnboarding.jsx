@@ -13,7 +13,7 @@ import { api } from '@/services/api'
 import { Button, Card, CardBody, CardTitle, EmptyState } from '@/components/ui'
 
 export function WorkspaceOnboarding() {
-  const { orgRole } = useAuth()
+  const { orgRole, isSignedIn } = useAuth()
   const { authStatus, setWorkspaceId, setWorkspaceName: ctxSetWorkspaceName, setAuthStatus } = useWorkspace()
   const [provisioning, setProvisioning] = useState(false)
   const [localWorkspaceName, setLocalWorkspaceName] = useState('')
@@ -70,8 +70,10 @@ export function WorkspaceOnboarding() {
     }
   }, [localWorkspaceName, workspaceSlug, setWorkspaceId, ctxSetWorkspaceName, setAuthStatus])
 
-  // If Clerk reports signed-out (401 from backend), surface sign-in prompt
-  if (authStatus === 'signed-out') {
+  // If Clerk reports signed-out (401 from backend) AND Clerk says not signed in,
+  // surface sign-in prompt. If Clerk still says signed in, the backend rejected
+  // the token but the Clerk session is valid — don't show "session expired".
+  if (authStatus === 'signed-out' && !isSignedIn) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-6 max-w-lg mx-auto">
         <div className="w-16 h-16 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4">

@@ -30,7 +30,7 @@ const HEALTH_INTERVAL_MS = 30000
 function AppWithAuth() {
   const { isSignedIn, isLoaded } = useAuth()
   const clerk = useClerk()
-  const { orgId, workspaceId, workspaceName, authStatus } = useWorkspace()
+  const { orgId, workspaceId, workspaceName } = useWorkspace()
   const [activePage, setActivePage] = useState('overview')
   const [backendStatus, setBackendStatus] = useState('checking')
 
@@ -107,7 +107,7 @@ function AppWithAuth() {
         <div className="flex flex-col items-center justify-center h-64 text-slate-500">
           <p className="mb-4 text-text-primary">Sign in to continue</p>
             <div className="flex gap-3">
-              <Button variant="primary" onClick={() => clerk.openSignIn()}>
+              <Button variant="primary" onClick={() => { if (!isSignedIn) clerk.openSignIn() }}>
                 Sign in
               </Button>
               <Button variant="ghost" onClick={() => clerk.openSignUp()}>
@@ -132,29 +132,6 @@ function AppWithAuth() {
           <p className="text-sm text-slate-500 mb-4">
             Please select an organization from the account menu to continue.
           </p>
-        </div>
-      </AppShell>
-    )
-  }
-
-  // Signed in but auth failed (401 from backend) — show sign-in prompt
-  if (authStatus === 'signed-out') {
-    return (
-      <AppShell
-        workspace={{ id: '', name: 'Sign in' }}
-        backendStatus={backendStatus}
-        header={{ activeItem: activePage, onNavChange: setActivePage }}
-      >
-        <div className="flex flex-col items-center justify-center h-64 text-slate-500">
-          <p className="mb-4 text-text-primary">Session expired</p>
-          <p className="text-sm text-slate-500 mb-4">
-            Your session is no longer valid. Please sign in again to continue.
-          </p>
-          <div className="flex gap-3">
-            <Button variant="primary" onClick={() => clerk.openSignIn()}>
-              Sign in again
-            </Button>
-          </div>
         </div>
       </AppShell>
     )

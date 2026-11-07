@@ -20,19 +20,22 @@ export function WorkspaceProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthError((status) => {
       if (status === 401) {
-        // Session expired or invalid — user needs to sign in again
-        setAuthStatus('signed-out')
-        setWorkspaceId(null)
-        setWorkspaceName(null)
+        // Backend rejected the token. Only mark signed-out if Clerk also
+        // says the user is not signed in. If Clerk says signed in, the
+        // session is still valid — don't force a Clerk sign-in modal.
+        if (!isSignedIn) {
+          setAuthStatus('signed-out')
+          setWorkspaceId(null)
+          setWorkspaceName(null)
+        }
       } else if (status === 403) {
-        // Access denied — organization not mapped to workspace
         setAuthStatus('no-workspace')
         setWorkspaceId(null)
         setWorkspaceName(null)
       }
-    })
+    }, [isSignedIn])
     return unsubscribe
-  }, [])
+  }, [isSignedIn])
 
   useEffect(() => {
     // Clerk still loading
@@ -83,9 +86,9 @@ export function WorkspaceProvider({ children }) {
       }
     } catch (err) {
       if (err.status === 401) {
-        setAuthStatus('signed-out')
-        setWorkspaceId(null)
-        setWorkspaceName(null)
+        // Backend rejected token but Clerk says signed in.
+        // Don't force sign-in modal — keep current state.
+        return
       } else if (err.status === 403) {
         setAuthStatus('no-workspace')
         setWorkspaceId(null)
