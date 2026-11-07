@@ -209,11 +209,8 @@ export default function ContentReviewPage() {
               <EmptyState
                 title="No content submitted yet"
                 description="Submit your first content item to begin the review workflow. Once submitted, content becomes an immutable version."
-                action={
-                  <Button variant="primary" size="sm" onClick={() => setSubmission(null)}>
-                    Submit your first content
-                  </Button>
-                }
+                action="Submit your first content"
+                onAction={() => setSubmission(null)}
               />
             </div>
           </div>

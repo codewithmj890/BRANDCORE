@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { api } from '@/services/api'
 import {
-  Card, Button, StatusBadge, EmptyState, ErrorState, Skeleton, SkeletonRow,
+  Card, StatusBadge, EmptyState, ErrorState, Skeleton, SkeletonRow,
   FormField, FormInput, FormSelect,
 } from '@/components/ui'
 import { PageHeader } from '@/components/layout'
@@ -126,11 +126,8 @@ export default function EvidenceLibraryPage() {
         <EmptyState
           title="No evidence sources yet"
           description="Add your first evidence source to begin linking evidence to approved facts."
-          action={
-            <Button variant="primary" size="sm" onClick={() => { /* add evidence flow */ }}>
-              Add Evidence Source
-            </Button>
-          }
+          action="Add Evidence Source"
+          onAction={() => { /* add evidence flow */ }}
         />
       )}
 

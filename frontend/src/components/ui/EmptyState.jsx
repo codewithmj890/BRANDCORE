@@ -4,7 +4,7 @@
  */
 import { Button } from './Button'
 
-export function EmptyState({ icon, title, description, action, className = '' }) {
+export function EmptyState({ icon, title, description, action, onAction, className = '' }) {
   return (
     <div
       className={
@@ -18,7 +18,15 @@ export function EmptyState({ icon, title, description, action, className = '' })
       {description && (
         <p className="text-muted-foreground text-sm max-w-xs mb-6">{description}</p>
       )}
-      {action && <Button variant="secondary" size="sm">{action}</Button>}
+      {action && (
+        typeof action === 'string' ? (
+          <Button variant="secondary" size="sm" onClick={onAction}>
+            {action}
+          </Button>
+        ) : (
+          action
+        )
+      )}
     </div>
   )
 }
