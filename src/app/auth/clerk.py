@@ -19,6 +19,7 @@ import hashlib
 import json
 import time
 import base64
+import uuid
 from datetime import datetime, timezone
 from typing import Any
 
@@ -33,6 +34,24 @@ from fastapi import HTTPException, Request
 ALLOWED_ALGORITHMS = {"RS256"}
 JWKS_CACHE_TTL_SECONDS = 300  # 5 minutes
 JWKS_CACHE_MAX_ENTRIES = 1
+
+# ---------------------------------------------------------------------------
+# Structured authentication error codes (development diagnostics only)
+# ---------------------------------------------------------------------------
+
+AUTH_ERROR_MISSING_HEADER = "MISSING_AUTHORIZATION_HEADER"
+AUTH_ERROR_INVALID_SCHEME = "INVALID_AUTHORIZATION_SCHEME"
+AUTH_ERROR_EMPTY_TOKEN = "EMPTY_BEARER_TOKEN"
+AUTH_ERROR_JWKS_FAILURE = "JWKS_RETRIEVAL_FAILURE"
+AUTH_ERROR_UNKNOWN_KID = "UNKNOWN_SIGNING_KEY_ID"
+AUTH_ERROR_INVALID_SIGNATURE = "INVALID_JWT_SIGNATURE"
+AUTH_ERROR_ISSUER_MISMATCH = "TOKEN_ISSUER_MISMATCH"
+AUTH_ERROR_TOKEN_EXPIRED = "TOKEN_EXPIRED"
+AUTH_ERROR_TOKEN_NOT_YET_VALID = "TOKEN_NOT_YET_VALID"
+AUTH_ERROR_INVALID_AZP = "INVALID_AUTHORIZED_PARTY"
+AUTH_ERROR_MISSING_SUBJECT = "MISSING_SUBJECT_CLAIM"
+AUTH_ERROR_CONFIG = "AUTHENTICATION_NOT_CONFIGURED"
+AUTH_ERROR_UNAVAILABLE = "AUTHENTICATION_UNAVAILABLE"
 
 
 # ---------------------------------------------------------------------------
@@ -55,6 +74,9 @@ class ClerkJwksClient:
         self.issuer_url = issuer_url.rstrip("/")
         self._cache: dict[str, _JwksCacheEntry] = {}
         self._fetch = fetch_fn or self._default_fetch
+        # Set to True when the most recent JWKS fetch failed; used by
+        # _extract_jwk_from_token to distinguish fetch failure from unknown kid.
+        self._last_fetch_failed: bool = False
 
     def _default_fetch(self, url: str) -> dict[str, Any]:
         import urllib.request
@@ -66,6 +88,7 @@ class ClerkJwksClient:
 
     async def get_signing_key(self, kid: str) -> dict[str, Any] | None:
         """Return the JWK matching `kid`, refreshing cache if needed."""
+        self._last_fetch_failed = False
         entry = self._cache.get(self.issuer_url)
         if entry is None or entry.is_expired(JWKS_CACHE_TTL_SECONDS):
             try:
@@ -74,7 +97,9 @@ class ClerkJwksClient:
                 # JWKS fetch failed (e.g. invalid issuer URL, network error).
                 # Return None so the caller raises a proper 401 instead of
                 # crashing with an unhandled exception.
+                self._last_fetch_failed = True
                 return None
+            self._last_fetch_failed = False
             keys = jwks.get("keys", [])
             self._cache[self.issuer_url] = _JwksCacheEntry(keys, time.time())
             # Bound cache size
@@ -175,7 +200,15 @@ def _verify_rs256(
 # ---------------------------------------------------------------------------
 
 class ClerkTokenError(Exception):
-    """Raised when a Clerk token is invalid."""
+    """Raised when a Clerk token is invalid.
+
+    Carries a safe error code for development diagnostics.
+    Never exposes JWT content, signing keys, or internal stack traces.
+    """
+
+    def __init__(self, message: str, error_code: str = "TOKEN_INVALID"):
+        super().__init__(message)
+        self.error_code = error_code
 
 
 def _validate_claims(
@@ -189,32 +222,32 @@ def _validate_claims(
     # iss — issuer must match configured Clerk instance
     iss = claims.get("iss")
     if not iss or iss != issuer_url:
-        raise ClerkTokenError(f"Invalid issuer: {iss}")
+        raise ClerkTokenError(f"Invalid issuer: {iss}", AUTH_ERROR_ISSUER_MISMATCH)
 
     # exp — expiration
     exp = claims.get("exp")
     if exp is not None:
         exp_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
         if now >= exp_dt:
-            raise ClerkTokenError("Token expired")
+            raise ClerkTokenError("Token expired", AUTH_ERROR_TOKEN_EXPIRED)
 
     # nbf — not before (when present)
     nbf = claims.get("nbf")
     if nbf is not None:
         nbf_dt = datetime.fromtimestamp(nbf, tz=timezone.utc)
         if now < nbf_dt:
-            raise ClerkTokenError("Token not yet valid")
+            raise ClerkTokenError("Token not yet valid", AUTH_ERROR_TOKEN_NOT_YET_VALID)
 
     # azp — authorized party (when present)
     azp = claims.get("azp")
     if azp is not None and authorized_party is not None:
         if azp != authorized_party:
-            raise ClerkTokenError(f"Invalid authorized party: {azp}")
+            raise ClerkTokenError(f"Invalid authorized party: {azp}", AUTH_ERROR_INVALID_AZP)
 
     # sub — subject (required)
     sub = claims.get("sub")
     if not sub:
-        raise ClerkTokenError("Missing subject")
+        raise ClerkTokenError("Missing subject", AUTH_ERROR_MISSING_SUBJECT)
 
 
 # ---------------------------------------------------------------------------
@@ -254,18 +287,27 @@ class ClerkUser:
 async def _extract_jwk_from_token(
     token: str,
     jwks_client: ClerkJwksClient,
-) -> dict[str, Any] | None:
-    """Extract the signing JWK for the token's kid from JWKS."""
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Extract the signing JWK for the token's kid from JWKS.
+
+    Returns (jwk, None) on success, or (None, error_code) on failure.
+    Distinguishes JWKS fetch failure from unknown key ID.
+    """
     try:
         header = jwt.get_unverified_header(token)
     except jwt.PyJWTError:
-        return None
+        return None, AUTH_ERROR_INVALID_SIGNATURE
 
     kid = header.get("kid")
     if not kid:
-        return None
+        return None, AUTH_ERROR_INVALID_SIGNATURE
 
-    return await jwks_client.get_signing_key(kid)
+    jwk = await jwks_client.get_signing_key(kid)
+    if jwk is not None:
+        return jwk, None
+    if jwks_client._last_fetch_failed:
+        return None, AUTH_ERROR_JWKS_FAILURE
+    return None, AUTH_ERROR_UNKNOWN_KID
 
 
 async def verify_clerk_token(
@@ -288,40 +330,40 @@ async def verify_clerk_token(
     try:
         header_b64, payload_b64, _ = token.split(".", 2)
     except ValueError:
-        raise ClerkTokenError("Invalid token structure")
+        raise ClerkTokenError("Invalid token structure", AUTH_ERROR_INVALID_SIGNATURE)
 
     # Decode header for algorithm and kid
     try:
         header_json = _b64url_decode(header_b64).decode("utf-8")
         unverified_header = json.loads(header_json)
     except (ValueError, json.JSONDecodeError) as exc:
-        raise ClerkTokenError(f"Invalid token header: {exc}") from exc
+        raise ClerkTokenError(f"Invalid token header: {exc}", AUTH_ERROR_INVALID_SIGNATURE) from exc
 
     # Decode claims
     try:
         payload_json = _b64url_decode(payload_b64).decode("utf-8")
         unverified_claims = json.loads(payload_json)
     except (ValueError, json.JSONDecodeError) as exc:
-        raise ClerkTokenError(f"Invalid token payload: {exc}") from exc
+        raise ClerkTokenError(f"Invalid token payload: {exc}", AUTH_ERROR_INVALID_SIGNATURE) from exc
 
     # Restrict allowed signing algorithms
     alg = unverified_header.get("alg")
     if alg not in ALLOWED_ALGORITHMS:
-        raise ClerkTokenError(f"Unsupported algorithm: {alg}")
+        raise ClerkTokenError(f"Unsupported algorithm: {alg}", AUTH_ERROR_INVALID_SIGNATURE)
 
     # Get signing key from JWKS
-    jwk = await _extract_jwk_from_token(token, jwks_client)
+    jwk, jwk_error = await _extract_jwk_from_token(token, jwks_client)
     if jwk is None:
-        raise ClerkTokenError("Signing key not found in JWKS")
+        raise ClerkTokenError("Signing key not found in JWKS", jwk_error or AUTH_ERROR_UNKNOWN_KID)
 
     # Verify signature
     try:
         signing_input, signature_b64url = token.rsplit(".", 1)
     except ValueError:
-        raise ClerkTokenError("Invalid token structure")
+        raise ClerkTokenError("Invalid token structure", AUTH_ERROR_INVALID_SIGNATURE)
 
     if not _verify_rs256(signing_input, signature_b64url, jwk):
-        raise ClerkTokenError("Invalid signature")
+        raise ClerkTokenError("Invalid signature", AUTH_ERROR_INVALID_SIGNATURE)
 
     # Validate claims
     _validate_claims(unverified_claims, issuer_url, authorized_party)
@@ -377,6 +419,10 @@ async def get_current_clerk_user(request: Request) -> ClerkUser:
     Reads CLERK_ISSUER_URL from request.scope["env"] (Cloudflare Python Workers
     binding pattern — never os.environ).
 
+    In development mode (BRANDCORE_ENV == "development"), returns structured
+    error responses with safe error codes and request IDs. In production mode,
+    returns generic error messages that reveal nothing about internals.
+
     Raises:
         HTTPException 401: missing or invalid authentication
     """
@@ -388,17 +434,42 @@ async def get_current_clerk_user(request: Request) -> ClerkUser:
     if not issuer_url:
         raise HTTPException(status_code=401, detail="Authentication not configured")
 
+    brandcore_env = getattr(env, "BRANDCORE_ENV", None)
+    is_development = brandcore_env == "development"
+
+    def _auth_error(status_code: int, message: str, error_code: str) -> HTTPException:
+        if is_development:
+            request_id = str(uuid.uuid4())[:8]
+            detail = {
+                "error": {
+                    "code": error_code,
+                    "message": message,
+                    "request_id": request_id,
+                }
+            }
+            return HTTPException(status_code=status_code, detail=detail)
+        return HTTPException(status_code=status_code, detail=message)
+
     authorized_party = getattr(env, "CLERK_AUTHORIZED_PARTY", None)
 
     auth_header = request.headers.get("authorization")
     if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing authorization header")
+        raise _auth_error(
+            401, "Missing authorization header", AUTH_ERROR_MISSING_HEADER
+        )
 
     parts = auth_header.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Invalid authorization scheme")
+        raise _auth_error(
+            401, "Invalid authorization scheme", AUTH_ERROR_INVALID_SCHEME
+        )
 
     token = parts[1]
+    if not token:
+        raise _auth_error(
+            401, "Empty bearer token", AUTH_ERROR_EMPTY_TOKEN
+        )
+
     jwks_client = ClerkJwksClient(issuer_url)
 
     try:
@@ -409,4 +480,4 @@ async def get_current_clerk_user(request: Request) -> ClerkUser:
             authorized_party=authorized_party,
         )
     except ClerkTokenError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        raise _auth_error(401, str(exc), exc.error_code) from exc
