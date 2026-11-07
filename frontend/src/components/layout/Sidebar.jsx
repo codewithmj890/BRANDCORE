@@ -1,21 +1,24 @@
 /**
  * BRANDCORE — Sidebar Navigation
- * Minimal, icon-first enterprise navigation with circular interaction boundaries.
+ * Premium minimal icon-first enterprise navigation.
  *
- * Desktop:
- * - Collapsed: circular icon buttons (44px) stacked vertically in 72px sidebar
- * - Expanded: circular icon button + text label in 256px sidebar
- * Mobile:
- * - Hidden from grid; overlay drawer controlled by topbar hamburger
+ * Design system: Minimalism & Swiss Style (UI/UX Pro Max)
+ * - Collapsed: circular icon controls (40px inner, 44px button) in 72px sidebar
+ * - Expanded: circular icon controls + labels in 232px sidebar
+ * - Active state: thin circular border + subtle accent-tinted surface
+ * - Hover state: subtle circular surface, cursor pointer
+ * - No vertical line indicators, no rectangular active backgrounds
+ *
+ * Mobile: overlay drawer controlled by topbar hamburger
  * - Escape-to-close, backdrop click to close, body scroll lock
  */
 import { useEffect, useCallback } from 'react'
 
-const COLLAPSED_WIDTH = 'w-19'   // 76px — circular icon buttons only
+const COLLAPSED_WIDTH = 'w-18'   // 72px — circular icon controls only
 const EXPANDED_WIDTH = 'w-58'    // 232px — circular icons + labels
 
-const ICON_SIZE = 'w-5 h-5'      // 20px icons
-const BTN_SIZE = 'w-11 h-11'     // 44px circular buttons
+const ICON_SIZE = 'w-[21px] h-[21px]'   // 21px icons
+const ICON_BTN_SIZE = 'w-10 h-10'       // 40px inner circular icon container
 
 const ICONS = {
   overview: (
@@ -79,18 +82,20 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
     'min-w-0',
   ].join(' ')
 
+  // Collapsed: compact vertical stack (gap-2 = 8px)
+  // Expanded: horizontal rows with compact padding (gap-2.5 = 10px, px-2.5 = 10px, py-2 = 8px)
   const navItemClasses = (isActive, isCollapsed) =>
     (isCollapsed
-      ? 'flex flex-col items-center gap-1.5 py-3 transition-all duration-200 '
-      : 'flex items-center gap-3 px-3 py-2 transition-all duration-200 ') +
+      ? 'flex flex-col items-center gap-2 py-2 transition-all duration-200 cursor-pointer '
+      : 'flex items-center gap-3 px-2.5 py-2 transition-all duration-200 cursor-pointer ') +
     (isActive
-      ? 'bg-accent/10 dark:bg-accent/10'
+      ? 'bg-accent/5 dark:bg-accent/5 border border-transparent hover:border-accent/40 dark:hover:border-accent/40'
       : 'hover:bg-surface-muted dark:hover:bg-surface-muted-dark');
 
   const iconClasses = (isActive) =>
-    BTN_SIZE + ' rounded-full flex items-center justify-center transition-colors duration-200 ' +
+    ICON_BTN_SIZE + ' rounded-full flex items-center justify-center transition-colors duration-200 ' +
     (isActive
-      ? 'bg-accent border border-accent text-on-accent'
+      ? 'border border-accent bg-accent/20 dark:bg-accent/10 text-accent'
       : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground-dark');
 
   return (
@@ -163,15 +168,15 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
                       }}
                       aria-current={isActive ? 'page' : undefined}
                       className={
-                        'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ' +
+                        'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer ' +
                         (isActive
-                          ? 'bg-accent/10 dark:bg-accent/10 text-accent dark:text-accent'
+                          ? 'bg-accent/5 dark:bg-accent/5 text-accent dark:text-accent border-r-2 border-r-accent'
                           : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground')
                       }
                     >
-                      <span className={BTN_SIZE + ' rounded-full flex items-center justify-center transition-colors duration-200 ' +
+                      <span className={ICON_BTN_SIZE + ' rounded-full flex items-center justify-center transition-colors duration-200 ' +
                         (isActive
-                          ? 'bg-accent text-on-accent'
+                          ? 'border border-accent bg-accent/20 dark:bg-accent/10 text-accent'
                           : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground-dark')}>
                         {Icon}
                       </span>

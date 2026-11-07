@@ -47,17 +47,17 @@ test.describe('BRANDCORE critical interaction repair verification', () => {
 
         // Sidebar navigation buttons have circular icon containers (desktop only)
         if (isDesktop) {
-          const iconContainers = page.locator('#brandcore-sidebar button[type="button"] span.w-11.h-11');
+          const iconContainers = page.locator('#brandcore-sidebar button[type="button"] span.w-10.h-10');
           const count = await iconContainers.count();
           expect(count).toBeGreaterThan(0);
-          // First icon container should be roughly circular (44px)
+          // First icon container should be roughly circular (40px)
           const firstIcon = iconContainers.first();
           const box = await firstIcon.boundingBox();
           if (box) {
             expect(box.width).toBeGreaterThan(36);
-            expect(box.width).toBeLessThan(52);
+            expect(box.width).toBeLessThan(46);
             expect(box.height).toBeGreaterThan(36);
-            expect(box.height).toBeLessThan(52);
+            expect(box.height).toBeLessThan(46);
           }
         }
       });
