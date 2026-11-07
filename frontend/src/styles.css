@@ -138,10 +138,12 @@
 
   html {
     color-scheme: light;
+    scroll-behavior: smooth;
   }
 
   html.dark {
     color-scheme: dark;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -149,7 +151,7 @@
     font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.5;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color var(--duration-normal) var(--easing-standard), color var(--duration-normal) var(--easing-standard);
     -webkit-font-smoothing: antialiased;
   }
 
