@@ -4,7 +4,7 @@ BRANDCORE repository base.
 D1 binding interface (Cloudflare Python Workers):
     await db.prepare(sql).bind(*params).run()      # write
     await db.prepare(sql).bind(*params).first()    # single row (dict | None)
-    await db.prepare(sql).bind(*params).all()      # multiple rows (list[dict])
+    await db.prepare(sql).bind(*params).all()      # D1Result envelope (.results = list[dict])
 
 All repository methods are async and receive a `db` connection exposing this
 interface. For tests, SqliteD1Wrapper adapts sqlite3.Connection to the same
@@ -73,4 +73,11 @@ class BaseRepository:
         return await self.db.prepare(sql).bind(*params).first()
 
     async def _all(self, sql: str, params: tuple = ()) -> list[dict]:
-        return await self.db.prepare(sql).bind(*params).all()
+        result = await self.db.prepare(sql).bind(*params).all()
+        # Cloudflare D1 Python Workers returns a D1Result envelope object
+        # with a .results attribute holding the list[dict] of rows.
+        # The SQLite test adapter (SqliteD1Wrapper) returns list[dict]
+        # directly, so fall back to the raw result when .results is absent.
+        if hasattr(result, "results"):
+            return result.results
+        return result
