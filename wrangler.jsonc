@@ -1,139 +1,133 @@
 {
-  // BRANDCORE — Wrangler configuration
-  // Owner: Mritunjay Singh
-  //
-  // STATUS: Placeholder IDs only. Do not deploy without replacing placeholders
-  // and obtaining explicit user approval.
-  //
-  // Verify current configuration syntax against:
-  // https://developers.cloudflare.com/workers/wrangler/configuration/
-  // https://developers.cloudflare.com/workers/languages/python/
-  // https://developers.cloudflare.com/workers/static-assets/
-
-  "name": "brandcore-worker",
-  // main points to src/worker.py — pywrangler convention: entry point lives in src/
-  // alongside python_modules/ (vendored packages). backend/src/app/ is kept for
-  // pytest; src/app/ is the Worker-canonical copy.
-  "main": "src/worker.py",
-
-  // Python Workers runtime.
-  // compatibility_date 2026-09-08 or later enables the Python 3.14 runtime
-  // (Cloudflare changed the default from CPython 3.12 to 3.14 on 2026-09-08).
-  // Verified per approval note 2026-11-04.
-  // Official ref: https://developers.cloudflare.com/workers/languages/python/
-  "compatibility_date": "2026-09-08",
-  "compatibility_flags": ["python_workers"],
-
-  // Workers Static Assets — serves the Vite production build
-  // https://developers.cloudflare.com/workers/static-assets/
-  "assets": {
-    "directory": "./frontend/dist",
-    "not_found_handling": "single-page-application"
-  },
-
-  // D1 relational database binding
-  // Replace <D1_DATABASE_ID> with the real ID after creating the database
-  // with explicit user approval: wrangler d1 create brandcore-db
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "brandcore-db",
-      "database_id": "<D1_DATABASE_ID>",
-      "migrations_dir": "database/migrations"
-    }
-  ],
-
-  // R2 private object storage binding
-  // Replace bucket_name with the real name after creating the bucket
-  // with explicit user approval: wrangler r2 bucket create brandcore-assets
-  "r2_buckets": [
-    {
-      "binding": "ASSETS",
-      "bucket_name": "brandcore-assets"
-    }
-  ],
-
-  // Workers AI binding — no ID required
-  // remote: true required for inference; no local simulator exists for Workers AI.
-  // Gate B approved 2026-11-04. D1 and R2 remain on local simulation.
-  "ai": {
-    "binding": "AI",
-    "remote": true
-  },
-
-  // Environment variable bindings
-  // BRANDCORE_ENV controls POC route visibility (see src/app/api/dependencies.py).
-  //
-  // Default (top-level): "disabled" — POC routes return HTTP 404. Fails closed.
-  // Development: set BRANDCORE_ENV="development" in .dev.vars (gitignored) OR
-  //              use --env=development which sets it explicitly below.
-  // Production: "production" — POC routes return HTTP 404.
-  //
-  // .dev.vars takes precedence over vars in `wrangler dev` for secrets/vars.
-  // See .dev.vars.example for the required variable name.
-  "vars": {
-    "BRANDCORE_ENV": "disabled",
-    "CLERK_ISSUER_URL": "<CLERK_ISSUER_URL>"
-  },
-
-  // Environment-specific overrides
-  "env": {
-    "development": {
-      "name": "brandcore-worker-dev",
-      "vars": {
-        "BRANDCORE_ENV": "development",
-        "CLERK_ISSUER_URL": "<CLERK_ISSUER_URL>"
-      },
-      // Development environment must redeclare all bindings — Wrangler does not
-      // inherit top-level bindings into named environments.
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "brandcore-db",
-          "database_id": "<D1_DATABASE_ID>",
-          "migrations_dir": "database/migrations"
-        }
-      ],
-      "r2_buckets": [
-        {
-          "binding": "ASSETS",
-          "bucket_name": "brandcore-assets"
-        }
-      ],
-      "ai": {
-        "binding": "AI",
-        "remote": true
-      }
-    },
-    "preview": {
-      "name": "brandcore-worker-preview"
-    },
-    "production": {
-      "name": "brandcore-worker",
-      "vars": {
-        "BRANDCORE_ENV": "production",
-        "CLERK_ISSUER_URL": "<CLERK_ISSUER_URL>"
-      },
-      // Production environment must redeclare all bindings — Wrangler does not
-      // inherit top-level bindings into named environments.
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "brandcore-db",
-          "database_id": "<D1_DATABASE_ID>",
-          "migrations_dir": "database/migrations"
-        }
-      ],
-      "r2_buckets": [
-        {
-          "binding": "ASSETS",
-          "bucket_name": "brandcore-assets"
-        }
-      ],
-      "ai": {
-        "binding": "AI",
-        "remote": true
-      }
-    }
-  }
+	// BRANDCORE — Wrangler configuration
+	// Owner: Mritunjay Singh
+	//
+	// STATUS: Placeholder IDs only. Do not deploy without replacing placeholders
+	// and obtaining explicit user approval.
+	//
+	// Verify current configuration syntax against:
+	// https://developers.cloudflare.com/workers/wrangler/configuration/
+	// https://developers.cloudflare.com/workers/languages/python/
+	// https://developers.cloudflare.com/workers/static-assets/
+	"name": "brandcore-worker",
+	// main points to src/worker.py — pywrangler convention: entry point lives in src/
+	// alongside python_modules/ (vendored packages). backend/src/app/ is kept for
+	// pytest; src/app/ is the Worker-canonical copy.
+	"main": "src/worker.py",
+	// Python Workers runtime.
+	// compatibility_date 2026-09-08 or later enables the Python 3.14 runtime
+	// (Cloudflare changed the default from CPython 3.12 to 3.14 on 2026-09-08).
+	// Verified per approval note 2026-11-04.
+	// Official ref: https://developers.cloudflare.com/workers/languages/python/
+	"compatibility_date": "2026-09-08",
+	"compatibility_flags": [
+		"python_workers"
+	],
+	// Workers Static Assets — serves the Vite production build
+	// https://developers.cloudflare.com/workers/static-assets/
+	"assets": {
+		"directory": "./frontend/dist",
+		"not_found_handling": "single-page-application"
+	},
+	// D1 relational database binding
+	// Replace <D1_DATABASE_ID> with the real ID after creating the database
+	// with explicit user approval: wrangler d1 create brandcore-db
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "brandcore-db",
+			"database_id": "<D1_DATABASE_ID>",
+			"migrations_dir": "database/migrations"
+		}
+	],
+	// R2 private object storage binding
+	// Replace bucket_name with the real name after creating the bucket
+	// with explicit user approval: wrangler r2 bucket create brandcore-assets
+	"r2_buckets": [
+		{
+			"binding": "ASSETS",
+			"bucket_name": "brandcore-assets"
+		}
+	],
+	// Workers AI binding — no ID required
+	// remote: true required for inference; no local simulator exists for Workers AI.
+	// Gate B approved 2026-11-04. D1 and R2 remain on local simulation.
+	"ai": {
+		"binding": "AI",
+		"remote": true
+	},
+	// Environment variable bindings
+	// BRANDCORE_ENV controls POC route visibility (see src/app/api/dependencies.py).
+	//
+	// Default (top-level): "disabled" — POC routes return HTTP 404. Fails closed.
+	// Development: set BRANDCORE_ENV="development" in .dev.vars (gitignored) OR
+	//              use --env=development which sets it explicitly below.
+	// Production: "production" — POC routes return HTTP 404.
+	//
+	// .dev.vars takes precedence over vars in `wrangler dev` for secrets/vars.
+	// See .dev.vars.example for the required variable name.
+	"vars": {
+		"BRANDCORE_ENV": "disabled",
+		"CLERK_ISSUER_URL": "<CLERK_ISSUER_URL>"
+	},
+	// Environment-specific overrides
+	"env": {
+		"development": {
+			"name": "brandcore-worker-dev",
+			"vars": {
+				"BRANDCORE_ENV": "development",
+				"CLERK_ISSUER_URL": "<CLERK_ISSUER_URL>"
+			},
+			// Development environment must redeclare all bindings — Wrangler does not
+			// inherit top-level bindings into named environments.
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "brandcore-db",
+					"database_id": "<D1_DATABASE_ID>",
+					"migrations_dir": "database/migrations"
+				}
+			],
+			"r2_buckets": [
+				{
+					"binding": "ASSETS",
+					"bucket_name": "brandcore-assets"
+				}
+			],
+			"ai": {
+				"binding": "AI",
+				"remote": true
+			}
+		},
+		"preview": {
+			"name": "brandcore-worker-preview"
+		},
+		"production": {
+			"name": "brandcore-worker",
+			"vars": {
+				"BRANDCORE_ENV": "production",
+				"CLERK_ISSUER_URL": "<CLERK_ISSUER_URL>"
+			},
+			// Production environment must redeclare all bindings — Wrangler does not
+			// inherit top-level bindings into named environments.
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "brandcore-db-production",
+					"database_id": "4308100a-0b04-4b0e-a74e-d8c26591c4b2",
+					"migrations_dir": "database/migrations"
+				}
+			],
+			"r2_buckets": [
+				{
+					"binding": "ASSETS",
+					"bucket_name": "brandcore-assets-production"
+				}
+			],
+			"ai": {
+				"binding": "AI",
+				"remote": true
+			}
+		}
+	}
 }
