@@ -164,8 +164,8 @@ def require_workspace_permission(
     Factory for a dependency that enforces workspace access AND a permission.
 
     Permission model (based on Clerk Admin and Member roles):
-      - org:admin (Administrator) — all permissions
-      - org:member (Member) — limited permissions; no approval authority unless
+      - "admin" (Administrator) — all permissions
+      - "member" (Member) — limited permissions; no approval authority unless
         explicitly granted via require_admin=True
 
     Usage:
@@ -183,7 +183,7 @@ def require_workspace_permission(
     ) -> ClerkUser:
         if require_admin:
             # Only organization administrators can approve/release content
-            if clerk_user.org_role != "org:admin":
+            if clerk_user.org_role != "admin":
                 raise HTTPException(
                     status_code=403,
                     detail="Administrator role required for this action",
@@ -191,7 +191,7 @@ def require_workspace_permission(
 
         if required_permission:
             if required_permission not in clerk_user.org_permissions:
-                if clerk_user.org_role != "org:admin":
+                if clerk_user.org_role != "admin":
                     raise HTTPException(
                         status_code=403,
                         detail=f"Permission required: {required_permission}",

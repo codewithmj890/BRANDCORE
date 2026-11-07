@@ -59,6 +59,47 @@ AUTH_ERROR_MISSING_SUBJECT = "MISSING_SUBJECT_CLAIM"
 AUTH_ERROR_CONFIG = "AUTHENTICATION_NOT_CONFIGURED"
 AUTH_ERROR_UNAVAILABLE = "AUTHENTICATION_UNAVAILABLE"
 
+# ---------------------------------------------------------------------------
+# Role normalization (Clerk Session Token v1 + v2)
+# ---------------------------------------------------------------------------
+
+# Canonical BRANDCORE role values
+ROLE_ADMIN = "admin"
+ROLE_MEMBER = "member"
+
+# Clerk v2 nested claim: o.rol = "admin" (no prefix)
+# Clerk v1 top-level claim: org_role = "org:admin"
+_CLERK_ROLE_PREFIX = "org:"
+
+
+def normalize_clerk_role(role: str | None) -> str | None:
+    """Normalize Clerk organization role to BRANDCORE canonical values.
+
+    Supports both Clerk Session Token formats:
+      - v2 nested claim: o.rol = "admin" or "member"
+      - v1 top-level claim: org_role = "org:admin" or "org:member"
+
+    Returns:
+        "admin" for any administrator variant
+        "member" for any member variant
+        None when role is absent or unrecognized
+    """
+    if not role:
+        return None
+
+    role = role.strip().lower()
+
+    # Strip "org:" prefix for v1 legacy format
+    if role.startswith(_CLERK_ROLE_PREFIX):
+        role = role[len(_CLERK_ROLE_PREFIX):]
+
+    if role == "admin":
+        return ROLE_ADMIN
+    if role == "member":
+        return ROLE_MEMBER
+
+    return None
+
 
 # ---------------------------------------------------------------------------
 # JWKS fetch exception classes
@@ -651,6 +692,9 @@ async def verify_clerk_token(
             org_permissions = org_permissions or nested_perms
         elif isinstance(nested_perms, str):
             org_permissions = org_permissions or [nested_perms]
+
+    # Normalize role to canonical BRANDCORE values
+    org_role = normalize_clerk_role(org_role)
 
     if isinstance(org_permissions, str):
         org_permissions = [org_permissions]

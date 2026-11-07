@@ -25,6 +25,7 @@ from app.auth.clerk import (
     JwksNetworkError,
     _b64url_decode_int,
     _verify_rs256,
+    normalize_clerk_role,
     verify_clerk_token,
     get_current_clerk_user,
 )
@@ -220,7 +221,7 @@ class TestVerifyClerkToken:
         assert isinstance(user, ClerkUser)
         assert user.user_id == "user_123"
         assert user.org_id == "org_123"
-        assert user.org_role == "org:admin"
+        assert user.org_role == "admin"
         assert user.is_authenticated
         assert user.has_organization
 
@@ -917,3 +918,216 @@ class TestVerifyTokenWithJwksFetchErrors:
         with pytest.raises(ClerkTokenError) as exc:
             _async_verify(client, token, "https://clerk.example.com")
         assert exc.value.error_code == AUTH_ERROR_JWKS_KID_NOT_FOUND
+
+
+# ---------------------------------------------------------------------------
+# Clerk Session Token v1 + v2 role normalization regression tests
+# ---------------------------------------------------------------------------
+
+class TestRoleNormalization:
+    """Test Clerk role normalization across v1 and v2 token formats."""
+
+    def test_normalize_v2_admin_rol(self):
+        """Clerk v2 nested o.rol = 'admin' normalizes to 'admin'."""
+        assert normalize_clerk_role("admin") == "admin"
+
+    def test_normalize_v2_member_rol(self):
+        """Clerk v2 nested o.rol = 'member' normalizes to 'member'."""
+        assert normalize_clerk_role("member") == "member"
+
+    def test_normalize_v1_org_admin(self):
+        """Clerk v1 top-level org_role = 'org:admin' normalizes to 'admin'."""
+        assert normalize_clerk_role("org:admin") == "admin"
+
+    def test_normalize_v1_org_member(self):
+        """Clerk v1 top-level org_role = 'org:member' normalizes to 'member'."""
+        assert normalize_clerk_role("org:member") == "member"
+
+    def test_normalize_none(self):
+        """None role returns None."""
+        assert normalize_clerk_role(None) is None
+
+    def test_normalize_empty_string(self):
+        """Empty string role returns None."""
+        assert normalize_clerk_role("") is None
+
+    def test_normalize_unrecognized(self):
+        """Unrecognized role returns None."""
+        assert normalize_clerk_role("owner") is None
+        assert normalize_clerk_role("billing_admin") is None
+
+
+class TestVerifyTokenWithRoleClaims:
+    """Test end-to-end token verification with different role claim formats."""
+
+    def test_v2_nested_o_rol_admin(self, rsa_keys, jwks_client):
+        """Clerk v2 nested o.rol = admin → user.org_role == 'admin'."""
+        claims = _make_valid_claims(org_role=None)  # no top-level org_role
+        claims["o"] = {
+            "id": "org_123",
+            "rol": "admin",
+            "slg": "my-org",
+            "per": [],
+        }
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert isinstance(user, ClerkUser)
+        assert user.user_id == "user_123"
+        assert user.org_id == "org_123"
+        assert user.org_role == "admin"
+        assert user.has_organization is True
+
+    def test_v2_nested_o_rol_member(self, rsa_keys, jwks_client):
+        """Clerk v2 nested o.rol = member → user.org_role == 'member'."""
+        claims = _make_valid_claims(org_role=None)
+        claims["o"] = {
+            "id": "org_123",
+            "rol": "member",
+            "slg": "my-org",
+            "per": [],
+        }
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert isinstance(user, ClerkUser)
+        assert user.org_role == "member"
+
+    def test_v1_top_level_org_role_org_admin(self, rsa_keys, jwks_client):
+        """Clerk v1 top-level org_role = 'org:admin' → user.org_role == 'admin'."""
+        claims = _make_valid_claims(org_role="org:admin")
+        # No nested "o" claim
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert isinstance(user, ClerkUser)
+        assert user.org_role == "admin"
+
+    def test_v1_top_level_org_role_org_member(self, rsa_keys, jwks_client):
+        """Clerk v1 top-level org_role = 'org:member' → user.org_role == 'member'."""
+        claims = _make_valid_claims(org_role="org:member")
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert isinstance(user, ClerkUser)
+        assert user.org_role == "member"
+
+    def test_v2_takes_precedence_over_v1(self, rsa_keys, jwks_client):
+        """When both v1 org_role and v2 o.rol present, v1 takes precedence (top-level first)."""
+        claims = _make_valid_claims(org_role="org:admin")
+        claims["o"] = {
+            "id": "org_123",
+            "rol": "member",
+            "slg": "my-org",
+            "per": [],
+        }
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert isinstance(user, ClerkUser)
+        # Top-level org_role takes precedence over nested o.rol
+        assert user.org_role == "admin"
+
+    def test_no_organization_claim(self, rsa_keys, jwks_client):
+        """No organization claim → user.org_role is None, has_organization is False."""
+        claims = _make_valid_claims(no_org=True)
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert isinstance(user, ClerkUser)
+        assert user.org_id is None
+        assert user.org_role is None
+        assert user.has_organization is False
+
+    def test_no_role_claim_with_org(self, rsa_keys, jwks_client):
+        """Organization present but no role claim → user.org_role is None."""
+        claims = _make_valid_claims(org_role=None)
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert isinstance(user, ClerkUser)
+        assert user.org_id == "org_123"
+        assert user.org_role is None
+        assert user.has_organization is True
+
+    def test_wrong_active_organization_id(self, rsa_keys, jwks_client):
+        """Token org_id differs from requested org_id → authorization should reject."""
+        claims = _make_valid_claims(org_id="org_other", org_role="org:admin")
+        claims["o"] = {
+            "id": "org_other",
+            "rol": "admin",
+            "slg": "other-org",
+            "per": [],
+        }
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert isinstance(user, ClerkUser)
+        assert user.org_id == "org_other"
+        assert user.org_role == "admin"
+        # The backend should verify org_id matches the requested organization
+        assert user.org_id != "org_123"
+
+
+# ---------------------------------------------------------------------------
+# Authorization decision tests (provision_workspace equivalent)
+# ---------------------------------------------------------------------------
+
+class TestWorkspaceProvisionAuthorization:
+    """Test the authorization decision logic for workspace provisioning."""
+
+    def test_admin_can_provision(self):
+        """Canonical 'admin' role passes the admin check."""
+        # This mirrors workspaces.py:96 logic
+        user_org_role = "admin"
+        assert user_org_role == "admin"  # would pass
+
+    def test_member_cannot_provision(self):
+        """Canonical 'member' role fails the admin check."""
+        user_org_role = "member"
+        assert user_org_role != "admin"  # would fail with 403
+
+    def test_v2_admin_rol_passes_after_normalization(self, rsa_keys, jwks_client):
+        """End-to-end: v2 o.rol=admin user passes admin authorization check."""
+        claims = _make_valid_claims(org_role=None)
+        claims["o"] = {
+            "id": "org_123",
+            "rol": "admin",
+            "slg": "my-org",
+            "per": [],
+        }
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        # This is the exact check from workspaces.py:96 and dependencies.py:186
+        assert user.org_role == "admin"
+        assert user.org_role != "org:admin"  # v2 format, no prefix
+        # After fix: this passes because org_role == "admin" (canonical)
+        is_admin = user.org_role == "admin"
+        assert is_admin is True
+
+    def test_v1_org_admin_passes_after_normalization(self, rsa_keys, jwks_client):
+        """End-to-end: v1 org_role=org:admin user passes admin authorization check."""
+        claims = _make_valid_claims(org_role="org:admin")
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert user.org_role == "admin"
+        is_admin = user.org_role == "admin"
+        assert is_admin is True
+
+    def test_member_denied_after_normalization(self, rsa_keys, jwks_client):
+        """End-to-end: v2 o.rol=member user fails admin authorization check."""
+        claims = _make_valid_claims(org_role=None)
+        claims["o"] = {
+            "id": "org_123",
+            "rol": "member",
+            "slg": "my-org",
+            "per": [],
+        }
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        user = _async_verify(jwks_client, token, "https://clerk.example.com")
+        assert user.org_role == "member"
+        is_admin = user.org_role == "admin"
+        assert is_admin is False

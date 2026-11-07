@@ -49,7 +49,7 @@ def _setup_test_db():
     return conn
 
 
-def _make_client(db_conn, org_role="org:admin", user_id="user-1", org_id="org-1"):
+def _make_client(db_conn, org_role="admin", user_id="user-1", org_id="org-1"):
     wrapper = SqliteD1Wrapper(db_conn)
     app.state.DB = wrapper
     app.state.BRANDCORE_ENV = "development"
@@ -155,7 +155,7 @@ class TestReviewSubmit:
         self.conn.close()
         app.dependency_overrides.clear()
         conn2 = _setup_test_db()
-        client2, _ = _make_client(conn2, org_role="org:member", user_id="user-2", org_id="org-1")
+        client2, _ = _make_client(conn2, org_role="member", user_id="user-2", org_id="org-1")
         # Need org mapping for org-1 on ws-1 (already exists from _setup_test_db)
         resp = client2.post("/api/workspaces/ws-1/content/cv-1/review", json={
             "decision": "APPROVED",

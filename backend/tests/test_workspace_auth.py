@@ -69,7 +69,7 @@ def _setup_test_db():
     return conn
 
 
-def _make_clerk_user(user_id="user-1", org_id="org-a", org_role="org:member", org_permissions=None):
+def _make_clerk_user(user_id="user-1", org_id="org-a", org_role="member", org_permissions=None):
     return ClerkUser(
         user_id=user_id,
         email="test@example.com",
@@ -168,7 +168,7 @@ class TestRequireWorkspaceAccess:
             "CLERK_ISSUER_URL": "https://clerk.example.com",
         })()
 
-        user = _make_clerk_user(org_id="org-a", org_role="org:member")
+        user = _make_clerk_user(org_id="org-a", org_role="member")
         dep = require_workspace_access("workspace_id")
         result = _run_async(dep(request, user))
         assert result is user
@@ -184,7 +184,7 @@ class TestRequireWorkspaceAccess:
             "CLERK_ISSUER_URL": "https://clerk.example.com",
         })()
 
-        user = _make_clerk_user(org_id="org-a", org_role="org:member")
+        user = _make_clerk_user(org_id="org-a", org_role="member")
         dep = require_workspace_access("workspace_id")
 
         from fastapi import HTTPException
@@ -241,7 +241,7 @@ class TestRequireWorkspaceAccess:
             "CLERK_ISSUER_URL": "https://clerk.example.com",
         })()
 
-        user = _make_clerk_user(org_id="org-c", org_role="org:member")
+        user = _make_clerk_user(org_id="org-c", org_role="member")
         dep = require_workspace_access("workspace_id")
 
         from fastapi import HTTPException
@@ -266,7 +266,7 @@ class TestRequireWorkspacePermission:
             "CLERK_ISSUER_URL": "https://clerk.example.com",
         })()
 
-        user = _make_clerk_user(org_id="org-a", org_role="org:admin")
+        user = _make_clerk_user(org_id="org-a", org_role="admin")
         dep = require_workspace_permission("workspace_id", require_admin=True)
         result = _run_async(dep(request, user))
         assert result is user
@@ -281,7 +281,7 @@ class TestRequireWorkspacePermission:
             "CLERK_ISSUER_URL": "https://clerk.example.com",
         })()
 
-        user = _make_clerk_user(org_id="org-a", org_role="org:member")
+        user = _make_clerk_user(org_id="org-a", org_role="member")
         dep = require_workspace_permission("workspace_id", require_admin=True)
 
         from fastapi import HTTPException
@@ -302,7 +302,7 @@ class TestRequireWorkspacePermission:
 
         user = _make_clerk_user(
             org_id="org-a",
-            org_role="org:member",
+            org_role="member",
             org_permissions=["org:system_memberships:read", "custom:approve"],
         )
         dep = require_workspace_permission(
@@ -387,14 +387,14 @@ class TestClerkNestedOrgClaims:
             user_id="user-1",
             email="test@example.com",
             org_id="org-v2",
-            org_role="org:admin",
+            org_role="admin",
             org_permissions=["org:system_memberships:read"],
             claims={"sub": "user-1"},
             org_slug="my-org",
         )
 
         assert user.org_id == "org-v2"
-        assert user.org_role == "org:admin"
+        assert user.org_role == "admin"
         assert user.org_slug == "my-org"
         assert "org:system_memberships:read" in user.org_permissions
         assert user.has_organization is True
@@ -479,7 +479,7 @@ class TestClerkNestedOrgClaims:
 
         assert user.user_id == "user-1"
         assert user.org_id == "org-v2"
-        assert user.org_role == "org:admin"
+        assert user.org_role == "admin"
         assert user.org_slug == "my-org"
         assert "org:system_memberships:read" in user.org_permissions
 
@@ -513,6 +513,6 @@ class TestClerkNestedOrgClaims:
             ))
 
         assert user.org_id == "org-top"
-        assert user.org_role == "org:member"
+        assert user.org_role == "member"
         assert "custom:read" in user.org_permissions
         assert "org:system_memberships:read" not in user.org_permissions

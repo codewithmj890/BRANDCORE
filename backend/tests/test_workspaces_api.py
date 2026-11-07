@@ -85,7 +85,7 @@ def _make_client(db_conn):
             user_id="user-1",
             email="test@example.com",
             org_id="org-1",
-            org_role="org:admin",
+            org_role="admin",
             org_permissions=[],
             claims={"sub": "user-1", "org_id": "org-1", "org_role": "org:admin"},
         )
@@ -154,7 +154,7 @@ class TestWorkspaceProvision:
         self.conn.close()
         app.dependency_overrides.clear()
 
-    def _override_user(self, org_role="org:admin", org_id="org-3", user_id="user-3"):
+    def _override_user(self, org_role="admin", org_id="org-3", user_id="user-3"):
         def mock_clerk_user():
             return ClerkUser(
                 user_id=user_id,
@@ -168,7 +168,7 @@ class TestWorkspaceProvision:
 
     def test_provision_creates_workspace_200(self):
         """Org admin can provision a new workspace."""
-        self._override_user(org_role="org:admin", org_id="org-3", user_id="user-3")
+        self._override_user(org_role="admin", org_id="org-3", user_id="user-3")
         resp = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
         data = resp.json()
@@ -180,7 +180,7 @@ class TestWorkspaceProvision:
 
     def test_provision_slug_auto_generated(self):
         """Slug is auto-generated from name when not provided."""
-        self._override_user(org_role="org:admin", org_id="org-4", user_id="user-4")
+        self._override_user(org_role="admin", org_id="org-4", user_id="user-4")
         resp = self.client.post("/api/workspaces/provision", json={"name": "My Brand"})
         assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
         data = resp.json()
@@ -188,7 +188,7 @@ class TestWorkspaceProvision:
 
     def test_provision_requires_admin_role(self):
         """Non-admin org members cannot provision workspaces (403)."""
-        self._override_user(org_role="org:member", org_id="org-5", user_id="user-5")
+        self._override_user(org_role="member", org_id="org-5", user_id="user-5")
         resp = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
         assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
         data = resp.json()
@@ -196,7 +196,7 @@ class TestWorkspaceProvision:
 
     def test_provision_idempotent_duplicate(self):
         """Repeated provisioning for the same org returns existing workspace (provisioned: False)."""
-        self._override_user(org_role="org:admin", org_id="org-6", user_id="user-6")
+        self._override_user(org_role="admin", org_id="org-6", user_id="user-6")
         resp1 = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
         assert resp1.status_code == 200
         data1 = resp1.json()
@@ -211,7 +211,7 @@ class TestWorkspaceProvision:
 
     def test_provision_list_workspaces_after_provision(self):
         """Provisioned workspace appears in list endpoint."""
-        self._override_user(org_role="org:admin", org_id="org-7", user_id="user-7")
+        self._override_user(org_role="admin", org_id="org-7", user_id="user-7")
         resp = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
         assert resp.status_code == 200
 
@@ -223,7 +223,7 @@ class TestWorkspaceProvision:
 
     def test_provision_no_organization(self):
         """User without an organization cannot provision (403)."""
-        self._override_user(org_role="org:admin", org_id=None, user_id="user-8")
+        self._override_user(org_role="admin", org_id=None, user_id="user-8")
         resp = self.client.post("/api/workspaces/provision", json={"name": "Acme Corp", "slug": "acme-corp"})
         assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
 

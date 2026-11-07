@@ -93,7 +93,7 @@ async def provision_workspace(
         raise HTTPException(status_code=403, detail="No active organization")
 
     # Only org admins can provision workspaces
-    if user.org_role != "org:admin":
+    if user.org_role != "admin":
         raise HTTPException(
             status_code=403,
             detail="Administrator role required to provision a workspace",
