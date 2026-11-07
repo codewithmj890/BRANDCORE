@@ -6,11 +6,11 @@
 import { forwardRef } from 'react'
 
 const variants = {
-  primary: 'btn-primary hover:bg-primary/90',
-  accent: 'btn-accent hover:bg-accent/90',
-  secondary: 'btn-secondary hover:bg-surface-muted',
-  danger: 'btn-danger hover:bg-destructive/90',
-  ghost: 'btn-ghost hover:bg-surface-muted hover:text-foreground',
+  primary: 'btn-primary',
+  accent: 'btn-accent',
+  secondary: 'btn-secondary',
+  danger: 'btn-danger',
+  ghost: 'btn-ghost',
 }
 
 const sizes = {

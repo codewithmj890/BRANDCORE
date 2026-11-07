@@ -88,6 +88,18 @@ export default {
         md: 'var(--shadow-md)',
         lg: 'var(--shadow-lg)',
       },
+      transitionDuration: {
+        'instant': 'var(--duration-instant)',
+        'fast': 'var(--duration-fast)',
+        DEFAULT: 'var(--duration-normal)',
+        'moderate': 'var(--duration-moderate)',
+        'slow': 'var(--duration-slow)',
+      },
+      transitionTimingFunction: {
+        'standard': 'var(--easing-standard)',
+        'entrance': 'var(--easing-entrance)',
+        'exit': 'var(--easing-exit)',
+      },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-in': 'slideIn 0.2s ease-out',

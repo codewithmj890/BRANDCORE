@@ -73,6 +73,16 @@
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Motion — centralized duration and easing tokens */
+    --duration-instant: 100ms;
+    --duration-fast: 150ms;
+    --duration-normal: 200ms;
+    --duration-moderate: 250ms;
+    --duration-slow: 350ms;
+    --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    --easing-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+    --easing-exit: cubic-bezier(0.4, 0, 1, 1);
   }
 
   .dark {
@@ -160,38 +170,73 @@
 
   .btn-base {
     @apply inline-flex items-center justify-center rounded-md font-medium transition-colors focus-ring disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed;
+    transition: transform var(--duration-fast) var(--easing-standard), background-color var(--duration-fast) var(--easing-standard), border-color var(--duration-fast) var(--easing-standard);
+  }
+
+  .btn-base:active {
+    transform: scale(0.95);
   }
 
   .btn-primary {
     @apply btn-base bg-primary text-on-primary;
   }
+  .btn-primary:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 90%, transparent);
+  }
 
   .btn-accent {
     @apply btn-base bg-accent text-on-accent;
+  }
+  .btn-accent:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 90%, transparent);
   }
 
   .btn-secondary {
     @apply btn-base bg-surface text-foreground border border-border;
   }
+  .btn-secondary:hover {
+    background-color: var(--color-surface-muted);
+    border-color: var(--color-border);
+  }
 
   .btn-ghost {
     @apply btn-base text-muted-foreground;
+  }
+  .btn-ghost:hover {
+    background-color: var(--color-surface-muted);
   }
 
   .btn-danger {
     @apply btn-base bg-destructive text-on-destructive;
   }
+  .btn-danger:hover {
+    background-color: color-mix(in srgb, var(--color-destructive) 90%, transparent);
+  }
 
   .card {
     @apply rounded-lg border border-border bg-surface shadow-sm;
+    transition: box-shadow var(--duration-normal) var(--easing-standard), border-color var(--duration-normal) var(--easing-standard), transform var(--duration-normal) var(--easing-standard);
+  }
+
+  /* Subtle hover elevation only for genuinely interactive cards */
+  .card-interactive {
+    @apply card cursor-pointer;
+    transform: translateY(0);
+  }
+  .card-interactive:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
   }
 
   .status-badge {
     @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border whitespace-nowrap;
+    transition: background-color var(--duration-fast) var(--easing-standard), border-color var(--duration-fast) var(--easing-standard), color var(--duration-fast) var(--easing-standard);
   }
 
   .form-input {
     @apply block w-full rounded border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:ring-2 focus:ring-[var(--color-ring)] focus:border-transparent disabled:opacity-50 disabled:pointer-events-none;
+    transition: border-color var(--duration-fast) var(--easing-standard), box-shadow var(--duration-fast) var(--easing-standard), background-color var(--duration-fast) var(--easing-standard);
   }
 
   .skeleton {

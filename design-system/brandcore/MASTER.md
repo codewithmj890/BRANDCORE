@@ -260,6 +260,27 @@ gsap.from(el, { opacity: 0, y: 12, duration: 0.35, ease: 'power1.out', scrollTri
 - ❌ Don't reveal below-the-fold content needed for SEO/crawlers as invisible-by-default without a no-JS fallback
 - ⚡ toggleActions 'play none none reverse' avoids re-triggering on every scroll direction change
 
+### Motion Design Tokens
+
+| Token | CSS Variable | Value | Usage |
+|-------|-------------|-------|-------|
+| `--duration-instant` | `100ms` | Instant state changes |
+| `--duration-fast` | `150ms` | Hover, press, focus transitions |
+| `--duration-normal` | `200ms` | Default component transitions |
+| `--duration-moderate` | `250ms` | Larger surface transitions |
+| `--duration-slow` | `350ms` | Page-level entrance/exit |
+| `--easing-standard` | `cubic-bezier(0.2, 0, 0, 1)` | Standard ease-out |
+| `--easing-entrance` | `cubic-bezier(0.16, 1, 0.3, 1)` | Entrance animations |
+| `--easing-exit` | `cubic-bezier(0.4, 0, 1, 1)` | Exit animations |
+
+**Motion Rules:**
+- All transitions use centralized tokens; no ad-hoc durations or easings
+- Hover/press/focus: `150ms`–`220ms` (`--duration-fast`)
+- Prefer `transform` and `opacity`; avoid animating layout properties
+- No animated backgrounds, marquee text, or decorative motion
+- `prefers-reduced-motion: reduce`: animations reduced to `0.01ms`
+- Hover effects do not shift layout or alter component dimensions
+
 ---
 
 ## Anti-Patterns (Do NOT Use)

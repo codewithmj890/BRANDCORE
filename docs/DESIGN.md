@@ -267,14 +267,41 @@ Page horizontal padding: 28px to 32px (px-6 md:px-8 lg:px-10).
 
 ---
 
+## Motion Design Tokens
+
+| Token | CSS Variable | Value | Usage |
+|-------|-------------|-------|-------|
+| `--duration-instant` | `100ms` | Instant state changes |
+| `--duration-fast` | `150ms` | Hover, press, focus transitions |
+| `--duration-normal` | `200ms` | Default component transitions |
+| `--duration-moderate` | `250ms` | Larger surface transitions |
+| `--duration-slow` | `350ms` | Page-level entrance/exit |
+| `--easing-standard` | `cubic-bezier(0.2, 0, 0, 1)` | Standard ease-out |
+| `--easing-entrance` | `cubic-bezier(0.16, 1, 0.3, 1)` | Entrance animations |
+| `--easing-exit` | `cubic-bezier(0.4, 0, 1, 1)` | Exit animations |
+
 ## Motion Rules
 
-- All transitions and animations use `ease-out` or `ease-in-out` timing
+- All transitions and animations use centralized motion tokens; no ad-hoc durations or easings
+- Hover, press, and focus transitions: `150ms` to `220ms` (`--duration-fast`)
 - Sidebar collapse/expand: `duration-300 ease-in-out` on width and transform
 - Mobile drawer slide: `duration-300 ease-in-out` on transform
 - Fade-in for page content: `duration-200 ease-out`
+- Prefer `transform` and `opacity` for animation; avoid animating layout properties (width, height, top, left)
 - No animated backgrounds, marquee text, or decorative motion
-- `prefers-reduced-motion: reduce`: All animations reduced to 0.01ms duration
+- `prefers-reduced-motion: reduce`: All animations reduced to `0.01ms` duration
+- Hover effects do not shift surrounding layout or alter component dimensions
+- No animation that delays user interaction or blocks click events
+
+## Component Motion Behavior
+
+| Component | Hover | Press/Active | Focus |
+|-----------|-------|--------------|-------|
+| Buttons | Subtle background surface transition | `scale(0.95)` at `150ms` | Visible focus ring (`--color-ring`) |
+| Cards (interactive) | Subtle elevation + border accent | None | Visible focus ring |
+| Sidebar nav items | Circular surface background, icon color | None | Visible focus ring |
+| Form inputs | Border color transition | None | Ring + border transition |
+| Status badges | Color/border transition | None | None |
 
 ---
 
@@ -296,3 +323,5 @@ Page horizontal padding: 28px to 32px (px-6 md:px-8 lg:px-10).
 - No invisible focus states
 - No CSS filters to generate dark mode
 - No excessively bright surface differences in dark mode
+- No installing Framer Motion or another animation framework for simple hover effects
+- No continuously running animation loops or `requestAnimationFrame` unless technically necessary
