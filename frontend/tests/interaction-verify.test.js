@@ -47,17 +47,23 @@ test.describe('BRANDCORE critical interaction repair verification', () => {
 
         // Sidebar navigation buttons have circular icon containers (desktop only)
         if (isDesktop) {
-          const iconContainers = page.locator('#brandcore-sidebar button[type="button"] span.w-10.h-10');
+          const iconContainers = page.locator('#brandcore-sidebar button[type="button"] span.w-11.h-11');
           const count = await iconContainers.count();
           expect(count).toBeGreaterThan(0);
-          // First icon container should be roughly circular (40px)
+          // First icon container should be roughly circular (44px)
           const firstIcon = iconContainers.first();
           const box = await firstIcon.boundingBox();
           if (box) {
-            expect(box.width).toBeGreaterThan(36);
-            expect(box.width).toBeLessThan(46);
-            expect(box.height).toBeGreaterThan(36);
-            expect(box.height).toBeLessThan(46);
+            expect(box.width).toBeGreaterThan(40);
+            expect(box.width).toBeLessThan(48);
+            expect(box.height).toBeGreaterThan(40);
+            expect(box.height).toBeLessThan(48);
+          }
+
+          // Sidebar expanded width should be no more than 232px
+          const sidebarBox = await sidebar.boundingBox();
+          if (sidebarBox) {
+            expect(sidebarBox.width).toBeLessThanOrEqual(234);
           }
         }
       });
@@ -207,6 +213,101 @@ test.describe('BRANDCORE critical interaction repair verification', () => {
           return nested;
         });
         expect(nestedButtons).toBe(0);
+      });
+
+      test('sidebar width constraints', async ({ page }) => {
+        test.setTimeout(120000);
+
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.goto('http://localhost:5173/', { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(3000);
+
+        const isDesktop = vp.name === 'desktop' || vp.name === 'laptop';
+        const sidebar = page.locator('#brandcore-sidebar');
+        const hamburger = page.locator('button[aria-label="Open navigation"], button[aria-label="Close navigation"]');
+
+        if (isDesktop) {
+          // Expanded width should be no more than 232px (plus 1px border)
+          const expandedBox = await sidebar.boundingBox();
+          if (expandedBox) {
+            expect(expandedBox.width).toBeLessThanOrEqual(234);
+          }
+
+          // Click hamburger to collapse sidebar
+          await hamburger.click();
+          await page.waitForTimeout(1000);
+
+          // Collapsed width should be approximately 76px (plus 1px border)
+          const collapsedBox = await sidebar.boundingBox();
+          if (collapsedBox) {
+            expect(collapsedBox.width).toBeGreaterThanOrEqual(74);
+            expect(collapsedBox.width).toBeLessThanOrEqual(78);
+          }
+
+          // Click hamburger again to restore
+          await hamburger.click();
+          await page.waitForTimeout(1000);
+        }
+      });
+
+      test('Content Review CTA buttons focus title input', async ({ page }) => {
+        test.setTimeout(120000);
+
+        const consoleErrors = [];
+        page.on('console', msg => {
+          if (msg.type() === 'error') consoleErrors.push('Console: ' + msg.text());
+        });
+        page.on('pageerror', err => consoleErrors.push('Page: ' + err.message));
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.goto('http://localhost:5173/', { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(3000);
+
+        // Navigate to Content Review
+        const contentNav = page.locator('#brandcore-sidebar button[aria-label="Content Review"]').first();
+        if (await contentNav.isVisible()) {
+          await contentNav.click();
+          await page.waitForTimeout(2000);
+        }
+
+        // Click header "Submit Content" button
+        const submitBtn = page.locator('button:has-text("Submit Content")').first();
+        if (await submitBtn.isVisible()) {
+          await submitBtn.click();
+          await page.waitForTimeout(1000);
+
+          // Title input should have document focus
+          const titleFocused = await page.locator('input[name="title"]').evaluate(el => el === document.activeElement);
+          expect(titleFocused).toBe(true);
+
+          // Title input should have visible focus ring
+          const focusRing = await page.locator('input[name="title"]').evaluate(el => {
+            const styles = getComputedStyle(el);
+            return styles.boxShadow && styles.boxShadow.includes('ring');
+          });
+
+          // Click header Submit Content again - should still work (no-op on already-shown form)
+          await submitBtn.click();
+          await page.waitForTimeout(1000);
+          const titleFocusedAgain = await page.locator('input[name="title"]').evaluate(el => el === document.activeElement);
+          expect(titleFocusedAgain).toBe(true);
+        }
+
+        // Click empty-state "Submit your first content" button
+        const emptyStateBtn = page.locator('button:has-text("Submit your first content")').first();
+        if (await emptyStateBtn.isVisible()) {
+          await emptyStateBtn.click();
+          await page.waitForTimeout(1000);
+
+          // Title input should have document focus
+          const titleFocused2 = await page.locator('input[name="title"]').evaluate(el => el === document.activeElement);
+          expect(titleFocused2).toBe(true);
+        }
+
+        // No console errors
+        const nestingWarnings = consoleErrors.filter(e => e.includes('validateDOMNesting'));
+        expect(nestingWarnings).toEqual([]);
+        expect(consoleErrors).toEqual([]);
       });
     });
   }

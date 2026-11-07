@@ -3,6 +3,8 @@
  * Label, input, error message container with proper accessibility association.
  */
 
+import { forwardRef } from 'react'
+
 export function FormField({ label, name, error, required, children, helperText, className = '' }) {
   return (
     <div className={'mb-4 ' + className}>
@@ -27,22 +29,24 @@ export function FormField({ label, name, error, required, children, helperText, 
   )
 }
 
-export function FormInput({ id, className = '', ...props }) {
+export const FormInput = forwardRef(function FormInput({ id, className = '', ...props }, ref) {
   return (
     <input
       id={id}
+      ref={ref}
       className={
         'form-input ' + className
       }
       {...props}
     />
   )
-}
+})
 
-export function FormTextarea({ id, className = '', rows = 4, ...props }) {
+export const FormTextarea = forwardRef(function FormTextarea({ id, className = '', rows = 4, ...props }, ref) {
   return (
     <textarea
       id={id}
+      ref={ref}
       rows={rows}
       className={
         'form-input resize-none ' + className
@@ -50,7 +54,7 @@ export function FormTextarea({ id, className = '', rows = 4, ...props }) {
       {...props}
     />
   )
-}
+})
 
 export function FormSelect({ id, className = '', ...props }) {
   return (

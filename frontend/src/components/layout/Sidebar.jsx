@@ -14,11 +14,11 @@
  */
 import { useEffect, useCallback } from 'react'
 
-const COLLAPSED_WIDTH = 'w-18'   // 72px — circular icon controls only
+const COLLAPSED_WIDTH = 'w-19'   // 76px — circular icon controls only
 const EXPANDED_WIDTH = 'w-58'    // 232px — circular icons + labels
 
 const ICON_SIZE = 'w-[21px] h-[21px]'   // 21px icons
-const ICON_BTN_SIZE = 'w-10 h-10'       // 40px inner circular icon container
+const ICON_BTN_SIZE = 'w-11 h-11'       // 44px inner circular icon container
 
 const ICONS = {
   overview: (
@@ -87,7 +87,7 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
   const navItemClasses = (isActive, isCollapsed) =>
     (isCollapsed
       ? 'flex flex-col items-center gap-2 py-2 transition-all duration-200 cursor-pointer '
-      : 'flex items-center gap-3 px-2.5 py-2 transition-all duration-200 cursor-pointer ') +
+      : 'flex items-center gap-2.5 px-2.5 py-2 transition-all duration-200 cursor-pointer ') +
     (isActive
       ? 'bg-accent/5 dark:bg-accent/5 border border-transparent hover:border-accent/40 dark:hover:border-accent/40'
       : 'hover:bg-surface-muted dark:hover:bg-surface-muted-dark');
