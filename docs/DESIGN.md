@@ -120,28 +120,29 @@ All active design specifications live in:
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `--radius-sm` | `8px` | Small elements, badges |
-| `--radius` | `12px` | Default, form inputs, select controls |
-| `--radius-md` | `16px` | Primary buttons, secondary buttons, dropdowns, sidebar nav items |
-| `--radius-lg` | `20px` | Cards, elevated panels |
-| `--radius-xl` | `24px` | Dialogs, modals |
-| `--radius-full` | `9999px` | Pills, circular buttons, avatars |
-| `--radius-circular` | `50%` | Perfect circles (menu button) |
+| `--radius-xs` | `8px` | Tiny elements, micro badges |
+| `--radius-sm` | `10px` | Small elements, compact badges |
+| `--radius-md` | `14px` | Default, form inputs, select controls, primary buttons, secondary buttons, dropdowns, sidebar nav items |
+| `--radius-lg` | `18px` | Cards, elevated panels |
+| `--radius-xl` | `22px` | Dialogs, modals |
+| `--radius-2xl` | `26px` | Large promotional surfaces |
+| `--radius-pill` | `9999px` | Pills, circular buttons, avatars |
+| `--radius-circle` | `50%` | Perfect circles (menu button) |
 
 **Component Radius Mapping:**
 
 | Component | Radius | Value |
 |-----------|--------|-------|
-| Cards | `--radius-lg` | 20px |
-| Primary buttons | `--radius-md` | 16px |
-| Secondary buttons | `--radius-md` | 16px |
-| Text inputs | `--radius` | 12px |
-| Select controls | `--radius` | 12px |
-| Dialogs | `--radius-xl` | 24px |
-| Dropdowns | `--radius-md` | 16px |
-| Sidebar navigation items | `--radius-md` | 16px |
-| Badges | `--radius-full` or `--radius` | pill or compact |
-| Menu button | `--radius-circular` | 50% (perfect circle, 44px) |
+| Cards | `--radius-lg` | 18px |
+| Primary buttons | `--radius-md` | 14px |
+| Secondary buttons | `--radius-md` | 14px |
+| Text inputs | `--radius-md` | 14px |
+| Select controls | `--radius-md` | 14px |
+| Dialogs | `--radius-xl` | 22px |
+| Dropdowns | `--radius-md` | 14px |
+| Sidebar navigation items | `--radius-md` | 14px |
+| Badges | `--radius-pill` or `--radius-md` | pill or compact |
+| Menu button | `--radius-circle` | 50% (perfect circle, 44px) |
 
 ---
 

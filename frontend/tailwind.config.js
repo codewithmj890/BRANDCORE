@@ -74,11 +74,13 @@ export default {
       },
       borderRadius: {
         sm: 'var(--radius-sm)',
-        DEFAULT: 'var(--radius)',
+        DEFAULT: 'var(--radius-md)',
         md: 'var(--radius-md)',
         lg: 'var(--radius-lg)',
         xl: 'var(--radius-xl)',
-        full: 'var(--radius-full)',
+        '2xl': 'var(--radius-2xl)',
+        pill: 'var(--radius-pill)',
+        full: 'var(--radius-circle)',
       },
       boxShadow: {
         sm: 'var(--shadow-sm)',

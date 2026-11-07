@@ -4,7 +4,7 @@
  * design system. States: idle → submitting (loading) → success | error.
  * Client-side validation is a convenience only; the server is authoritative.
  */
-import { useEffect, useId, useRef, useState } from 'react'
+import { forwardRef, useEffect, useId, useImperativeHandle, useRef, useState } from 'react'
 import { BODY_MAX, TITLE_MAX, USE_MOCK_API, submitContent } from './contentReviewApi.js'
 import {
   Button,
@@ -95,7 +95,7 @@ function SuccessPanel({ result, onReset, headingRef }) {
   )
 }
 
-export default function ContentSubmissionForm({ workspaceId, onSubmitted }) {
+export default forwardRef(function ContentSubmissionForm({ workspaceId, onSubmitted }, ref) {
   const uid = useId()
   const ids = {
     title: `${uid}-title`,
@@ -118,6 +118,12 @@ export default function ContentSubmissionForm({ workspaceId, onSubmitted }) {
   const bodyRef = useRef(null)
   const errorRef = useRef(null)
   const successRef = useRef(null)
+
+  useImperativeHandle(ref, () => ({
+    focusTitle: () => {
+      titleRef.current?.focus()
+    },
+  }))
 
   useEffect(() => {
     if (status === 'success') successRef.current?.focus()
@@ -265,4 +271,4 @@ export default function ContentSubmissionForm({ workspaceId, onSubmitted }) {
       </p>
     </form>
   )
-}
+})

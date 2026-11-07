@@ -42,10 +42,27 @@ export default function ContentReviewPage() {
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [versionLoading, setVersionLoading] = useState(false)
   const submissionFormRef = useRef(null)
+  const titleInputRef = useRef(null)
+  const [requestScroll, setRequestScroll] = useState(false)
 
   const scrollToSubmissionForm = useCallback(() => {
-    submissionFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    submissionFormRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'center' })
+    titleInputRef.current?.focusTitle()
   }, [])
+
+  const handleResetToForm = useCallback(() => {
+    setRequestScroll(true)
+    setSubmission(null)
+  }, [])
+
+  // Scroll + focus after the submission form remounts (e.g. after clicking Submit Content again).
+  useEffect(() => {
+    if (requestScroll && submission === null) {
+      scrollToSubmissionForm()
+      setRequestScroll(false)
+    }
+  }, [requestScroll, submission, scrollToSubmissionForm])
 
   const fetchContentVersions = useCallback(async () => {
     if (!workspaceId || !contentItemId || authStatus !== 'ready') {
@@ -171,10 +188,7 @@ export default function ContentReviewPage() {
         description="Submit content for review, examine AI-extracted claims and verification findings, and record review decisions."
         breadcrumbs={[{ label: 'Content Review', href: '#' }]}
         actions={[
-          <Button key="submit" variant="primary" onClick={() => {
-            setSubmission(null)
-            scrollToSubmissionForm()
-          }}>
+          <Button key="submit" variant="primary" onClick={handleResetToForm}>
             Submit Content
           </Button>,
         ]}
@@ -204,10 +218,11 @@ export default function ContentReviewPage() {
                 <CardTitle>Submit Content</CardTitle>
               </CardHeader>
               <CardBody>
-                <ContentSubmissionForm
-                  workspaceId={workspaceId}
-                  onSubmitted={handleSubmitted}
-                />
+            <ContentSubmissionForm
+              ref={titleInputRef}
+              workspaceId={workspaceId}
+              onSubmitted={handleSubmitted}
+            />
               </CardBody>
             </Card>
           </div>
@@ -218,10 +233,7 @@ export default function ContentReviewPage() {
                 title="No content submitted yet"
                 description="Submit your first content item to begin the review workflow. Once submitted, content becomes an immutable version."
                 action="Submit your first content"
-                onAction={() => {
-                  setSubmission(null)
-                  scrollToSubmissionForm()
-                }}
+                onAction={handleResetToForm}
               />
             </div>
           </div>

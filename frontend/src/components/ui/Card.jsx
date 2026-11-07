@@ -2,9 +2,12 @@
  * BRANDCORE — Card Component
  * Elevated surface container with consistent border and shadow.
  */
-export function Card({ className = '', children, padding = 'p-6' }) {
+import { forwardRef } from 'react'
+
+export const Card = forwardRef(function Card({ className = '', children, padding = 'p-6' }, ref) {
   return (
     <div
+      ref={ref}
       className={
         'card ' +
         padding + ' ' + className
@@ -13,7 +16,7 @@ export function Card({ className = '', children, padding = 'p-6' }) {
       {children}
     </div>
   )
-}
+})
 
 export function CardHeader({ className = '', children }) {
   return <div className={'mb-5 ' + className}>{children}</div>
