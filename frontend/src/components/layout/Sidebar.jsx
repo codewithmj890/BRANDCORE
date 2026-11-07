@@ -84,13 +84,13 @@ export function Sidebar({ activeItem, onItemClick, isCollapsed, isOpen, onClose,
       ? 'flex flex-col items-center gap-1.5 py-3 transition-all duration-200 '
       : 'flex items-center gap-3 px-3 py-2 transition-all duration-200 ') +
     (isActive
-      ? 'bg-accent/10 dark:bg-accent/10 border-r-2 border-r-accent/40'
+      ? 'bg-accent/10 dark:bg-accent/10'
       : 'hover:bg-surface-muted dark:hover:bg-surface-muted-dark');
 
   const iconClasses = (isActive) =>
     BTN_SIZE + ' rounded-full flex items-center justify-center transition-colors duration-200 ' +
     (isActive
-      ? 'bg-accent text-on-accent'
+      ? 'bg-accent border border-accent text-on-accent'
       : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground-dark');
 
   return (
