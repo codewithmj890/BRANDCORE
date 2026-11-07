@@ -11,9 +11,18 @@ import pytest
 import asyncio
 
 from app.auth.clerk import (
+    AUTH_ERROR_JWKS_EMPTY,
+    AUTH_ERROR_JWKS_HTTP_ERROR,
+    AUTH_ERROR_JWKS_INVALID_RESPONSE,
+    AUTH_ERROR_JWKS_KID_NOT_FOUND,
+    AUTH_ERROR_JWKS_NETWORK_FAILURE,
     ClerkJwksClient,
     ClerkTokenError,
     ClerkUser,
+    JwksEmptyError,
+    JwksHttpError,
+    JwksInvalidResponse,
+    JwksNetworkError,
     _b64url_decode_int,
     _verify_rs256,
     verify_clerk_token,
@@ -741,3 +750,170 @@ class TestGetCurrentClerkUserDiagnostics:
         assert exc is not None
         assert exc.status_code == 401
         assert isinstance(exc.detail, str)  # Plain string, not dict
+
+
+# ---------------------------------------------------------------------------
+# JWKS fetch error regression tests
+# ---------------------------------------------------------------------------
+
+class TestJwksClientFetchErrors:
+    """Test JWKS fetch error handling with distinct error codes."""
+
+    def test_successful_jwks_retrieval(self, rsa_keys):
+        """Successful JWKS fetch returns the key."""
+        jwk = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="key-1")
+
+        async def fake_fetch(url):
+            return {"keys": [jwk]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+        result = asyncio.run(client.get_signing_key("key-1"))
+        assert result is not None
+        assert result["kid"] == "key-1"
+        assert client._last_fetch_failed is False
+        assert client._last_fetch_error_code is None
+
+    def test_network_failure_returns_network_error_code(self, rsa_keys):
+        """Network failure returns JWKS_NETWORK_FAILURE error code."""
+        async def failing_fetch(url):
+            raise JwksNetworkError("DNS resolution failed")
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=failing_fetch)
+        result = asyncio.run(client.get_signing_key("key-1"))
+        assert result is None
+        assert client._last_fetch_failed is True
+        assert client._last_fetch_error_code == AUTH_ERROR_JWKS_NETWORK_FAILURE
+        assert client._last_fetch_error_class == "JwksNetworkError"
+
+    def test_non_200_http_status_returns_http_error_code(self, rsa_keys):
+        """Non-2xx HTTP status returns JWKS_HTTP_ERROR error code."""
+        async def http_error_fetch(url):
+            raise JwksHttpError(502, "Bad Gateway")
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=http_error_fetch)
+        result = asyncio.run(client.get_signing_key("key-1"))
+        assert result is None
+        assert client._last_fetch_failed is True
+        assert client._last_fetch_error_code == AUTH_ERROR_JWKS_HTTP_ERROR
+        assert client._last_fetch_http_status == 502
+
+    def test_malformed_json_returns_invalid_response_code(self, rsa_keys):
+        """Malformed JSON response returns JWKS_INVALID_RESPONSE error code."""
+        async def bad_fetch(url):
+            raise JwksInvalidResponse("Invalid JSON")
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=bad_fetch)
+        result = asyncio.run(client.get_signing_key("key-1"))
+        assert result is None
+        assert client._last_fetch_failed is True
+        assert client._last_fetch_error_code == AUTH_ERROR_JWKS_INVALID_RESPONSE
+
+    def test_empty_keys_array_returns_empty_code(self, rsa_keys):
+        """Empty keys array returns JWKS_EMPTY error code."""
+        async def empty_fetch(url):
+            return {"keys": []}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=empty_fetch)
+        result = asyncio.run(client.get_signing_key("key-1"))
+        assert result is None
+        assert client._last_fetch_failed is True
+        assert client._last_fetch_error_code == AUTH_ERROR_JWKS_EMPTY
+
+    def test_unknown_kid_returns_kid_not_found_code(self, rsa_keys):
+        """Unknown kid returns JWKS_KID_NOT_FOUND error code (fetch succeeded, key not found)."""
+        jwk = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="existing-key")
+
+        async def fake_fetch(url):
+            return {"keys": [jwk]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+        result = asyncio.run(client.get_signing_key("missing-key"))
+        assert result is None
+        # Fetch succeeded (not a network failure), but kid not found
+        assert client._last_fetch_failed is False
+        assert client._last_fetch_error_code == AUTH_ERROR_JWKS_KID_NOT_FOUND
+
+    def test_diagnostics_include_fetch_error_details(self, rsa_keys):
+        """Diagnostics include error class, message, HTTP status, and content type."""
+        async def http_error_fetch(url):
+            raise JwksHttpError(503, "Service Unavailable")
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=http_error_fetch)
+        asyncio.run(client.get_signing_key("key-1"))
+
+        diag = client.get_diagnostics()
+        assert diag["last_fetch_failed"] is True
+        assert diag["last_fetch_error_code"] == AUTH_ERROR_JWKS_HTTP_ERROR
+        assert diag["last_fetch_error_class"] == "JwksHttpError"
+        assert diag["last_fetch_http_status"] == 503
+        assert diag["jwks_url"] == "https://clerk.example.com/.well-known/jwks.json"
+        assert diag["issuer"] == "https://clerk.example.com"
+        # No private key material exposed — check dict keys, not substring
+        secret_fields = {"n", "e", "d", "p", "q"}
+        assert not secret_fields.intersection(set(diag.keys()))
+
+
+# ---------------------------------------------------------------------------
+# End-to-end token verification with fetch error propagation
+# ---------------------------------------------------------------------------
+
+class TestVerifyTokenWithJwksFetchErrors:
+    """Test that fetch errors propagate correctly through verify_clerk_token."""
+
+    def test_network_failure_propagates_jwks_network_failure(self, rsa_keys):
+        """JWKS network failure propagates as JWKS_NETWORK_FAILURE error code."""
+        claims = _make_valid_claims()
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        async def failing_fetch(url):
+            raise JwksNetworkError("Connection refused")
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=failing_fetch)
+
+        with pytest.raises(ClerkTokenError) as exc:
+            _async_verify(client, token, "https://clerk.example.com")
+        assert exc.value.error_code == AUTH_ERROR_JWKS_NETWORK_FAILURE
+
+    def test_invalid_response_propagates_invalid_response_code(self, rsa_keys):
+        """Invalid JWKS response propagates as JWKS_INVALID_RESPONSE error code."""
+        claims = _make_valid_claims()
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        async def bad_fetch(url):
+            raise JwksInvalidResponse("Invalid JWKS JSON")
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=bad_fetch)
+
+        with pytest.raises(ClerkTokenError) as exc:
+            _async_verify(client, token, "https://clerk.example.com")
+        assert exc.value.error_code == AUTH_ERROR_JWKS_INVALID_RESPONSE
+
+    def test_empty_keys_propagates_empty_code(self, rsa_keys):
+        """Empty JWKS keys array propagates as JWKS_EMPTY error code."""
+        claims = _make_valid_claims()
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims)
+
+        async def empty_fetch(url):
+            return {"keys": []}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=empty_fetch)
+
+        with pytest.raises(ClerkTokenError) as exc:
+            _async_verify(client, token, "https://clerk.example.com")
+        assert exc.value.error_code == AUTH_ERROR_JWKS_EMPTY
+
+    def test_unknown_kid_propagates_kid_not_found_code(self, rsa_keys):
+        """Unknown kid propagates as JWKS_KID_NOT_FOUND error code."""
+        claims = _make_valid_claims()
+        token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims, kid="missing-key")
+
+        jwk = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="existing-key")
+
+        async def fake_fetch(url):
+            return {"keys": [jwk]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+
+        with pytest.raises(ClerkTokenError) as exc:
+            _async_verify(client, token, "https://clerk.example.com")
+        assert exc.value.error_code == AUTH_ERROR_JWKS_KID_NOT_FOUND

@@ -44,6 +44,11 @@ AUTH_ERROR_MISSING_HEADER = "MISSING_AUTHORIZATION_HEADER"
 AUTH_ERROR_INVALID_SCHEME = "INVALID_AUTHORIZATION_SCHEME"
 AUTH_ERROR_EMPTY_TOKEN = "EMPTY_BEARER_TOKEN"
 AUTH_ERROR_JWKS_FAILURE = "JWKS_RETRIEVAL_FAILURE"
+AUTH_ERROR_JWKS_NETWORK_FAILURE = "JWKS_NETWORK_FAILURE"
+AUTH_ERROR_JWKS_HTTP_ERROR = "JWKS_HTTP_ERROR"
+AUTH_ERROR_JWKS_INVALID_RESPONSE = "JWKS_INVALID_RESPONSE"
+AUTH_ERROR_JWKS_EMPTY = "JWKS_EMPTY"
+AUTH_ERROR_JWKS_KID_NOT_FOUND = "JWKS_KID_NOT_FOUND"
 AUTH_ERROR_UNKNOWN_KID = "UNKNOWN_SIGNING_KEY_ID"
 AUTH_ERROR_INVALID_SIGNATURE = "INVALID_JWT_SIGNATURE"
 AUTH_ERROR_ISSUER_MISMATCH = "TOKEN_ISSUER_MISMATCH"
@@ -53,6 +58,30 @@ AUTH_ERROR_INVALID_AZP = "INVALID_AUTHORIZED_PARTY"
 AUTH_ERROR_MISSING_SUBJECT = "MISSING_SUBJECT_CLAIM"
 AUTH_ERROR_CONFIG = "AUTHENTICATION_NOT_CONFIGURED"
 AUTH_ERROR_UNAVAILABLE = "AUTHENTICATION_UNAVAILABLE"
+
+
+# ---------------------------------------------------------------------------
+# JWKS fetch exception classes
+# ---------------------------------------------------------------------------
+
+class JwksNetworkError(Exception):
+    """Network/DNS/TLS/connection failure when fetching JWKS."""
+
+
+class JwksHttpError(Exception):
+    """Non-2xx HTTP status from JWKS endpoint."""
+
+    def __init__(self, status: int, message: str = ""):
+        super().__init__(message or f"HTTP {status}")
+        self.status = status
+
+
+class JwksInvalidResponse(Exception):
+    """Malformed JWKS response (invalid JSON, missing keys field)."""
+
+
+class JwksEmptyError(Exception):
+    """JWKS response has empty keys array."""
 
 
 # ---------------------------------------------------------------------------
@@ -78,11 +107,80 @@ class ClerkJwksClient:
         # Set to True when the most recent JWKS fetch failed; used by
         # _extract_jwk_from_token to distinguish fetch failure from unknown kid.
         self._last_fetch_failed: bool = False
+        # Safe diagnostics from the last fetch attempt (never exposes secrets)
+        self._last_fetch_error_code: str | None = None
+        self._last_fetch_error_class: str | None = None
+        self._last_fetch_error_message: str | None = None
+        self._last_fetch_http_status: int | None = None
+        self._last_fetch_content_type: str | None = None
 
-    def _default_fetch(self, url: str) -> dict[str, Any]:
-        import urllib.request
-        with urllib.request.urlopen(url, timeout=10) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+    async def _default_fetch(self, url: str) -> dict[str, Any]:
+        """Fetch JWKS using Workers-supported outbound fetch API.
+
+        In the Cloudflare Workers Python runtime, uses the `fetch()` function
+        from the `workers` module (available via FFI). Falls back to
+        urllib.request for testing/local development environments where the
+        workers module is not installed.
+
+        Returns the parsed JSON body as a dict.
+
+        Raises:
+            JwksNetworkError: DNS/TLS/connection failure.
+            JwksHttpError: Non-2xx HTTP status.
+            JwksInvalidResponse: Invalid JSON or missing keys field.
+        """
+        # Try Workers runtime fetch first (production)
+        try:
+            from workers import fetch  # type: ignore
+
+            response = await fetch(url)
+            status = response.status
+            content_type = response.headers.get("content-type", "")
+            body = await response.text()
+
+            if status < 200 or status >= 300:
+                raise JwksHttpError(status, f"HTTP {status}")
+
+            if "json" not in content_type.lower():
+                raise JwksInvalidResponse(
+                    f"Unexpected content type: {content_type}"
+                )
+
+            try:
+                return json.loads(body)
+            except json.JSONDecodeError as exc:
+                raise JwksInvalidResponse(f"Invalid JSON: {exc}") from exc
+
+        except ImportError:
+            # Fall back to urllib.request for testing/local development
+            import urllib.request
+            import urllib.error
+
+            def _sync_fetch() -> dict[str, Any]:
+                try:
+                    with urllib.request.urlopen(url, timeout=10) as resp:
+                        status = resp.status
+                        content_type = resp.headers.get("content-type", "")
+                        body = resp.read().decode("utf-8")
+
+                        if status < 200 or status >= 300:
+                            raise JwksHttpError(status, f"HTTP {status}")
+
+                        if "json" not in content_type.lower():
+                            raise JwksInvalidResponse(
+                                f"Unexpected content type: {content_type}"
+                            )
+
+                        try:
+                            return json.loads(body)
+                        except json.JSONDecodeError as exc:
+                            raise JwksInvalidResponse(f"Invalid JSON: {exc}") from exc
+                except (JwksHttpError, JwksInvalidResponse):
+                    raise
+                except (urllib.error.URLError, OSError, ConnectionError, TimeoutError) as exc:
+                    raise JwksNetworkError(f"Network error: {exc}") from exc
+
+            return await asyncio.to_thread(_sync_fetch)
 
     def _jwks_url(self) -> str:
         return f"{self.issuer_url}/.well-known/jwks.json"
@@ -104,16 +202,34 @@ class ClerkJwksClient:
             "key_count": len(kids),
             "available_kids": kids,
             "last_fetch_failed": self._last_fetch_failed,
+            "last_fetch_error_code": self._last_fetch_error_code,
+            "last_fetch_error_class": self._last_fetch_error_class,
+            "last_fetch_error_message": self._last_fetch_error_message,
+            "last_fetch_http_status": self._last_fetch_http_status,
+            "last_fetch_content_type": self._last_fetch_content_type,
         }
 
     async def _fetch_with_retry(self, url: str, max_retries: int = 2) -> dict[str, Any]:
-        """Fetch JWKS with exponential backoff retries on transient failure."""
+        """Fetch JWKS with exponential backoff retries on transient network failure.
+
+        Only retries on JwksNetworkError (DNS/TLS/connection). HTTP errors and
+        invalid responses are not retried.
+        """
         last_error: Exception | None = None
         for attempt in range(max_retries + 1):
             try:
                 return await self._fetch(url)
-            except Exception as exc:
+            except JwksNetworkError as exc:
                 last_error = exc
+                if attempt < max_retries:
+                    await asyncio.sleep(0.5 * (2 ** attempt))
+            except (JwksHttpError, JwksInvalidResponse):
+                raise
+            except Exception as exc:
+                # Wrap unexpected exceptions (e.g. ConnectionError from test mocks)
+                # as network errors so they can be retried.
+                wrapped = JwksNetworkError(f"Unexpected error: {exc}")
+                last_error = wrapped
                 if attempt < max_retries:
                     await asyncio.sleep(0.5 * (2 ** attempt))
         raise last_error or RuntimeError("JWKS fetch failed")
@@ -124,9 +240,14 @@ class ClerkJwksClient:
         On cache miss or expired cache, fetches fresh JWKS.
         On unknown kid, refreshes cache once and retries lookup (key rotation).
         Distinguishes JWKS fetch failure from unknown key ID via
-        _last_fetch_failed.
+        _last_fetch_failed and related diagnostic fields.
         """
         self._last_fetch_failed = False
+        self._last_fetch_error_code = None
+        self._last_fetch_error_class = None
+        self._last_fetch_error_message = None
+        self._last_fetch_http_status = None
+        self._last_fetch_content_type = None
         entry = self._cache.get(self.issuer_url)
         keys: list[dict[str, Any]] = []
 
@@ -134,8 +255,27 @@ class ClerkJwksClient:
             # Cache miss or expired — fetch fresh JWKS
             try:
                 jwks = await self._fetch_with_retry(self._jwks_url())
-            except Exception:
-                self._last_fetch_failed = True
+            except JwksNetworkError as exc:
+                self._record_fetch_error(
+                    AUTH_ERROR_JWKS_NETWORK_FAILURE,
+                    exc.__class__.__name__,
+                    str(exc),
+                )
+                return None
+            except JwksHttpError as exc:
+                self._record_fetch_error(
+                    AUTH_ERROR_JWKS_HTTP_ERROR,
+                    exc.__class__.__name__,
+                    str(exc),
+                    http_status=exc.status,
+                )
+                return None
+            except JwksInvalidResponse as exc:
+                self._record_fetch_error(
+                    AUTH_ERROR_JWKS_INVALID_RESPONSE,
+                    exc.__class__.__name__,
+                    str(exc),
+                )
                 return None
             self._last_fetch_failed = False
             keys = jwks.get("keys", [])
@@ -157,8 +297,27 @@ class ClerkJwksClient:
         if entry is not None and not entry.is_expired(JWKS_CACHE_TTL_SECONDS):
             try:
                 jwks = await self._fetch_with_retry(self._jwks_url())
-            except Exception:
-                self._last_fetch_failed = True
+            except JwksNetworkError as exc:
+                self._record_fetch_error(
+                    AUTH_ERROR_JWKS_NETWORK_FAILURE,
+                    exc.__class__.__name__,
+                    str(exc),
+                )
+                return None
+            except JwksHttpError as exc:
+                self._record_fetch_error(
+                    AUTH_ERROR_JWKS_HTTP_ERROR,
+                    exc.__class__.__name__,
+                    str(exc),
+                    http_status=exc.status,
+                )
+                return None
+            except JwksInvalidResponse as exc:
+                self._record_fetch_error(
+                    AUTH_ERROR_JWKS_INVALID_RESPONSE,
+                    exc.__class__.__name__,
+                    str(exc),
+                )
                 return None
             self._last_fetch_failed = False
             keys = jwks.get("keys", [])
@@ -169,7 +328,36 @@ class ClerkJwksClient:
             if jwk is not None:
                 return jwk
 
+        # Kid not found after all retries — record as empty or not found
+        if not keys:
+            self._record_fetch_error(
+                AUTH_ERROR_JWKS_EMPTY,
+                "JwksEmptyError",
+                "JWKS response contained no keys",
+            )
+        else:
+            # Unknown kid — fetch succeeded but key not in JWKS.
+            # Record error code for diagnostics but do NOT mark fetch as failed.
+            self._last_fetch_error_code = AUTH_ERROR_JWKS_KID_NOT_FOUND
+            self._last_fetch_error_class = "JwksKidNotFoundError"
+            self._last_fetch_error_message = f"kid '{kid}' not found in JWKS"
         return None
+
+    def _record_fetch_error(
+        self,
+        error_code: str,
+        error_class: str,
+        error_message: str,
+        http_status: int | None = None,
+        content_type: str | None = None,
+    ) -> None:
+        """Record safe fetch error details for development diagnostics."""
+        self._last_fetch_failed = True
+        self._last_fetch_error_code = error_code
+        self._last_fetch_error_class = error_class
+        self._last_fetch_error_message = error_message
+        self._last_fetch_http_status = http_status
+        self._last_fetch_content_type = content_type
 
     @staticmethod
     def _find_key_by_kid(keys: list[dict[str, Any]], kid: str) -> dict[str, Any] | None:
@@ -372,8 +560,13 @@ async def _extract_jwk_from_token(
     if jwk is not None:
         return jwk, None
     if jwks_client._last_fetch_failed:
-        return None, AUTH_ERROR_JWKS_FAILURE
-    return None, AUTH_ERROR_UNKNOWN_KID
+        # Use the specific error code recorded by get_signing_key,
+        # falling back to generic codes if none was recorded.
+        error_code = jwks_client._last_fetch_error_code
+        if error_code is None:
+            error_code = AUTH_ERROR_JWKS_FAILURE
+        return None, error_code
+    return None, AUTH_ERROR_JWKS_KID_NOT_FOUND
 
 
 async def verify_clerk_token(
