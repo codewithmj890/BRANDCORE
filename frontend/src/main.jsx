@@ -30,6 +30,7 @@ const publishableKey =
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
+<<<<<<< Updated upstream
       {publishableKey ? (
         <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
           <App />
@@ -37,6 +38,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       ) : (
         <ConfigurationRequired />
       )}
+=======
+      <ClerkProvider
+        publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
+        afterSignOutUrl="/"
+      >
+        <App />
+      </ClerkProvider>
+>>>>>>> Stashed changes
     </ThemeProvider>
   </React.StrictMode>
 )
