@@ -397,3 +397,347 @@ class TestGetCurrentClerkUser:
         exc = asyncio.run(run())
         assert exc is not None
         assert exc.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# JWKS client regression tests — cache refresh, retry, edge cases, diagnostics
+# ---------------------------------------------------------------------------
+
+class TestJwksClientCacheRefresh:
+    """Test cache refresh on unknown kid (key rotation scenario)."""
+
+    def test_unknown_kid_triggers_cache_refresh_and_retry(self, rsa_keys):
+        """When kid not found in cached JWKS, refresh and retry."""
+        jwk_v1 = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="key-v1")
+        jwk_v2 = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="key-v2")
+
+        fetch_calls = []
+
+        async def fake_fetch(url):
+            fetch_calls.append(url)
+            if len(fetch_calls) == 1:
+                return {"keys": [jwk_v1]}
+            return {"keys": [jwk_v2]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+
+        # key-v1 found in initial cache
+        result = asyncio.run(client.get_signing_key("key-v1"))
+        assert result is not None
+        assert result["kid"] == "key-v1"
+
+        # key-v2 not in cache → triggers refresh → found
+        result = asyncio.run(client.get_signing_key("key-v2"))
+        assert result is not None
+        assert result["kid"] == "key-v2"
+
+        # Should have fetched twice (initial + refresh on unknown kid)
+        assert len(fetch_calls) == 2
+
+    def test_unknown_kid_still_unknown_after_refresh(self, rsa_keys):
+        """When kid not found even after cache refresh, returns None (UNKNOWN_KID)."""
+        jwk_v1 = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="key-v1")
+
+        async def fake_fetch(url):
+            return {"keys": [jwk_v1]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+        result = asyncio.run(client.get_signing_key("nonexistent-key"))
+        assert result is None
+        assert client._last_fetch_failed is False  # Fetch succeeded, just no match
+
+    def test_cache_hit_no_refresh_for_matching_kid(self, rsa_keys, jwks_client):
+        """Matching kid in cache does not trigger unnecessary refresh."""
+        fetch_count = 0
+
+        async def counting_fetch(url):
+            nonlocal fetch_count
+            fetch_count += 1
+            return {"keys": [jwks_client._cache["https://clerk.example.com"].keys[0]]}
+
+        # Use the existing fixture client (already has key cached)
+        result = asyncio.run(jwks_client.get_signing_key("test-key-1"))
+        assert result is not None
+        assert result["kid"] == "test-key-1"
+
+
+class TestJwksClientMultipleKeys:
+    """Test JWKS with multiple public keys."""
+
+    def test_finds_correct_key_among_multiple(self, rsa_keys):
+        """When JWKS has multiple keys, finds the one matching the kid."""
+        jwk_a = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="key-a")
+        keys_b = _make_test_rsa_keys()
+        jwk_b = _make_jwk(keys_b["n"], keys_b["e"], kid="key-b")
+
+        async def fake_fetch(url):
+            return {"keys": [jwk_a, jwk_b]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+
+        result_a = asyncio.run(client.get_signing_key("key-a"))
+        assert result_a is not None
+        assert result_a["kid"] == "key-a"
+
+        result_b = asyncio.run(client.get_signing_key("key-b"))
+        assert result_b is not None
+        assert result_b["kid"] == "key-b"
+
+
+class TestJwksClientEdgeCases:
+    """Test edge cases: empty, malformed, network failure, retry."""
+
+    def test_empty_keys_array(self):
+        """JWKS with empty keys array returns None for any kid."""
+        async def fake_fetch(url):
+            return {"keys": []}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+        result = asyncio.run(client.get_signing_key("any-key"))
+        assert result is None
+
+    def test_malformed_jwks_no_keys_field(self):
+        """JWKS response without 'keys' field is treated as empty."""
+        async def fake_fetch(url):
+            return {}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+        result = asyncio.run(client.get_signing_key("any-key"))
+        assert result is None
+
+    def test_network_failure_sets_last_fetch_failed(self):
+        """When JWKS fetch fails, returns None with _last_fetch_failed=True."""
+        async def failing_fetch(url):
+            raise ConnectionError("Network unreachable")
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=failing_fetch)
+        result = asyncio.run(client.get_signing_key("any-key"))
+        assert result is None
+        assert client._last_fetch_failed is True
+
+    def test_retry_on_transient_failure(self, rsa_keys):
+        """Transient fetch failure is retried, then succeeds."""
+        jwk = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="test-key")
+
+        call_count = 0
+
+        async def flaky_fetch(url):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise ConnectionError("Temporary failure")
+            return {"keys": [jwk]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=flaky_fetch)
+        result = asyncio.run(client.get_signing_key("test-key"))
+        assert result is not None
+        assert result["kid"] == "test-key"
+        assert call_count == 3
+
+
+class TestJwksClientDiagnostics:
+    """Test the get_diagnostics method returns safe metadata only."""
+
+    def test_diagnostics_returns_safe_metadata(self, jwk):
+        """Diagnostics never exposes private key material."""
+        async def fake_fetch(url):
+            return {"keys": [jwk]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+        asyncio.run(client.get_signing_key("test-key-1"))
+
+        diag = client.get_diagnostics()
+        assert diag["jwks_url"] == "https://clerk.example.com/.well-known/jwks.json"
+        assert diag["issuer"] == "https://clerk.example.com"
+        assert diag["cached"] is True
+        assert diag["key_count"] == 1
+        assert "test-key-1" in diag["available_kids"]
+        assert diag["last_fetch_failed"] is False
+        # No private key material exposed
+        for secret_field in ("n", "e", "d", "p", "q"):
+            assert secret_field not in diag
+
+    def test_diagnostics_shows_fetch_failure(self):
+        """Diagnostics reports when the last fetch failed."""
+        async def failing_fetch(url):
+            raise ConnectionError("Network unreachable")
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=failing_fetch)
+        asyncio.run(client.get_signing_key("any-key"))
+
+        diag = client.get_diagnostics()
+        assert diag["last_fetch_failed"] is True
+        assert diag["key_count"] == 0
+
+
+class TestVerifyClerkTokenCacheRefresh:
+    """Test end-to-end token verification with cache refresh on key rotation."""
+
+    def test_key_rotation_verifies_with_cache_refresh(self, rsa_keys):
+        """Token signed with key-v2 verifies after cache refresh from key-v1."""
+        jwk_v1 = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="key-v1")
+        jwk_v2 = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="key-v2")
+
+        fetch_calls = []
+
+        async def fake_fetch(url):
+            fetch_calls.append(url)
+            if len(fetch_calls) == 1:
+                return {"keys": [jwk_v1]}
+            return {"keys": [jwk_v2]}
+
+        client = ClerkJwksClient(issuer_url="https://clerk.example.com", fetch_fn=fake_fetch)
+
+        # First request: key-v1 populates the cache
+        claims_v1 = _make_valid_claims()
+        token_v1 = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims_v1, kid="key-v1")
+        user_v1 = _async_verify(client, token_v1, "https://clerk.example.com")
+        assert isinstance(user_v1, ClerkUser)
+        assert user_v1.user_id == "user_123"
+        assert len(fetch_calls) == 1  # Initial cache population
+
+        # Second request: key-v2 not in cache → triggers refresh → found
+        claims_v2 = _make_valid_claims()
+        token_v2 = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims_v2, kid="key-v2")
+        user_v2 = _async_verify(client, token_v2, "https://clerk.example.com")
+        assert isinstance(user_v2, ClerkUser)
+        assert user_v2.user_id == "user_123"
+        assert len(fetch_calls) == 2  # Initial fetch + refresh on unknown kid
+
+
+# ---------------------------------------------------------------------------
+# get_current_clerk_user diagnostics tests (development mode)
+# ---------------------------------------------------------------------------
+
+class TestGetCurrentClerkUserDiagnostics:
+    """Test that development error responses include JWKS diagnostics."""
+
+    def _make_dev_request(self, headers=None):
+        scope = {
+            "type": "http", "method": "GET", "path": "/api/test",
+            "headers": [], "query_string": b"", "client": ("127.0.0.1", 12345),
+            "server": ("testserver", 80), "scheme": "http", "root_path": "",
+            "path_params": {}, "env": None,
+        }
+        class Env:
+            def __init__(self, vars_dict):
+                for k, v in vars_dict.items():
+                    setattr(self, k, v)
+        scope["env"] = Env({
+            "CLERK_ISSUER_URL": "https://clerk.example.com",
+            "BRANDCORE_ENV": "development",
+        })
+        if headers:
+            for k, v in headers.items():
+                scope["headers"].append([k, v])  # String keys for dict.get() compatibility
+        return type("Request", (), {"scope": scope, "headers": dict(scope["headers"])})()
+
+    def _make_request(self, headers=None, env_vars=None):
+        scope = {
+            "type": "http", "method": "GET", "path": "/api/test",
+            "headers": [], "query_string": b"", "client": ("127.0.0.1", 12345),
+            "server": ("testserver", 80), "scheme": "http", "root_path": "",
+            "path_params": {}, "env": None,
+        }
+        if env_vars:
+            class Env:
+                def __init__(self, vars_dict):
+                    for k, v in vars_dict.items():
+                        setattr(self, k, v)
+            scope["env"] = Env(env_vars)
+        if headers:
+            for k, v in headers.items():
+                scope["headers"].append([k.encode(), v.encode()])
+        return type("Request", (), {"scope": scope, "headers": dict(scope["headers"])})()
+
+    def test_unknown_kid_development_response_includes_jwks_diagnostics(self, rsa_keys):
+        """401 response for JWKS failure includes safe JWKS diagnostics in dev mode."""
+        from fastapi import HTTPException
+        from unittest.mock import patch
+        import json
+
+        jwk = _make_jwk(rsa_keys["n"], rsa_keys["e"], kid="existing-key")
+
+        # Mock urllib.request.urlopen to return JWKS with only existing-key
+        class MockResponse:
+            def __init__(self, body, status=200, content_type="application/json"):
+                self._body = body
+                self.status = status
+                self.headers = {"content-type": content_type}
+            def read(self):
+                return self._body
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+
+        jwks_body = json.dumps({"keys": [jwk]}).encode("utf-8")
+
+        with patch("urllib.request.urlopen", return_value=MockResponse(jwks_body)):
+            # Token with kid not in JWKS → UNKNOWN_KID error with diagnostics
+            claims = _make_valid_claims()
+            token = _make_manual_jwt(rsa_keys["d"], rsa_keys["n"], claims, kid="missing-key")
+
+            request = self._make_dev_request(
+                headers={"authorization": f"Bearer {token}"}
+            )
+
+            async def run():
+                try:
+                    await get_current_clerk_user(request)
+                    return None
+                except HTTPException as exc:
+                    return exc
+
+            exc = asyncio.run(run())
+            assert exc is not None
+            assert exc.status_code == 401
+            assert isinstance(exc.detail, dict)
+            assert "error" in exc.detail
+            error = exc.detail["error"]
+            assert "code" in error
+            assert "message" in error
+            assert "request_id" in error
+            assert "jwks" in error
+            jwks_diag = error["jwks"]
+            assert "jwks_url" in jwks_diag
+            assert "available_kids" in jwks_diag
+            assert isinstance(jwks_diag["available_kids"], list)
+            assert "last_fetch_failed" in jwks_diag
+
+    def _make_request(self, headers=None, env_vars=None):
+        scope = {
+            "type": "http", "method": "GET", "path": "/api/test",
+            "headers": [], "query_string": b"", "client": ("127.0.0.1", 12345),
+            "server": ("testserver", 80), "scheme": "http", "root_path": "",
+            "path_params": {}, "env": None,
+        }
+        if env_vars:
+            class Env:
+                def __init__(self, vars_dict):
+                    for k, v in vars_dict.items():
+                        setattr(self, k, v)
+            scope["env"] = Env(env_vars)
+        if headers:
+            for k, v in headers.items():
+                scope["headers"].append([k, v])
+        return type("Request", (), {"scope": scope, "headers": dict(scope["headers"])})()
+
+    def test_production_response_has_no_diagnostics(self):
+        """Production error responses do not include JWKS diagnostics."""
+        from fastapi import HTTPException
+        request = self._make_request(
+            headers={"authorization": "Bearer fake.token.here"},
+            env_vars={"CLERK_ISSUER_URL": "https://clerk.example.com"},
+        )
+        async def run():
+            try:
+                await get_current_clerk_user(request)
+                return None
+            except HTTPException as exc:
+                return exc
+
+        exc = asyncio.run(run())
+        assert exc is not None
+        assert exc.status_code == 401
+        assert isinstance(exc.detail, str)  # Plain string, not dict

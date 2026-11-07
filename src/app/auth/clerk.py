@@ -19,6 +19,7 @@ import hashlib
 import json
 import time
 import base64
+import asyncio
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -86,17 +87,54 @@ class ClerkJwksClient:
     def _jwks_url(self) -> str:
         return f"{self.issuer_url}/.well-known/jwks.json"
 
+    def get_diagnostics(self) -> dict[str, Any]:
+        """Return safe JWKS metadata for development diagnostics.
+
+        Never exposes private key material, JWT content, or secrets.
+        """
+        entry = self._cache.get(self.issuer_url)
+        kids: list[str] = []
+        if entry is not None:
+            kids = [k.get("kid", "") for k in entry.keys if k.get("kty") == "RSA"]
+        return {
+            "jwks_url": self._jwks_url(),
+            "issuer": self.issuer_url,
+            "cached": entry is not None,
+            "cache_expired": entry.is_expired(JWKS_CACHE_TTL_SECONDS) if entry else None,
+            "key_count": len(kids),
+            "available_kids": kids,
+            "last_fetch_failed": self._last_fetch_failed,
+        }
+
+    async def _fetch_with_retry(self, url: str, max_retries: int = 2) -> dict[str, Any]:
+        """Fetch JWKS with exponential backoff retries on transient failure."""
+        last_error: Exception | None = None
+        for attempt in range(max_retries + 1):
+            try:
+                return await self._fetch(url)
+            except Exception as exc:
+                last_error = exc
+                if attempt < max_retries:
+                    await asyncio.sleep(0.5 * (2 ** attempt))
+        raise last_error or RuntimeError("JWKS fetch failed")
+
     async def get_signing_key(self, kid: str) -> dict[str, Any] | None:
-        """Return the JWK matching `kid`, refreshing cache if needed."""
+        """Return the JWK matching `kid`, refreshing cache if needed.
+
+        On cache miss or expired cache, fetches fresh JWKS.
+        On unknown kid, refreshes cache once and retries lookup (key rotation).
+        Distinguishes JWKS fetch failure from unknown key ID via
+        _last_fetch_failed.
+        """
         self._last_fetch_failed = False
         entry = self._cache.get(self.issuer_url)
+        keys: list[dict[str, Any]] = []
+
         if entry is None or entry.is_expired(JWKS_CACHE_TTL_SECONDS):
+            # Cache miss or expired — fetch fresh JWKS
             try:
-                jwks = await self._fetch(self._jwks_url())
+                jwks = await self._fetch_with_retry(self._jwks_url())
             except Exception:
-                # JWKS fetch failed (e.g. invalid issuer URL, network error).
-                # Return None so the caller raises a proper 401 instead of
-                # crashing with an unhandled exception.
                 self._last_fetch_failed = True
                 return None
             self._last_fetch_failed = False
@@ -108,6 +146,34 @@ class ClerkJwksClient:
         else:
             keys = entry.keys
 
+        # First pass: look for matching key in current keys
+        jwk = self._find_key_by_kid(keys, kid)
+        if jwk is not None:
+            return jwk
+
+        # Key not found — cache may be stale (key rotation).
+        # Refresh cache once and retry, but only if we haven't already
+        # fetched fresh in this call (entry was not expired/missing).
+        if entry is not None and not entry.is_expired(JWKS_CACHE_TTL_SECONDS):
+            try:
+                jwks = await self._fetch_with_retry(self._jwks_url())
+            except Exception:
+                self._last_fetch_failed = True
+                return None
+            self._last_fetch_failed = False
+            keys = jwks.get("keys", [])
+            self._cache[self.issuer_url] = _JwksCacheEntry(keys, time.time())
+            if len(self._cache) > JWKS_CACHE_MAX_ENTRIES:
+                self._cache.popitem()
+            jwk = self._find_key_by_kid(keys, kid)
+            if jwk is not None:
+                return jwk
+
+        return None
+
+    @staticmethod
+    def _find_key_by_kid(keys: list[dict[str, Any]], kid: str) -> dict[str, Any] | None:
+        """Find a JWK by kid, returning None if not found."""
         for key in keys:
             if key.get("kid") == kid and key.get("kty") == "RSA":
                 return key
@@ -480,4 +546,15 @@ async def get_current_clerk_user(request: Request) -> ClerkUser:
             authorized_party=authorized_party,
         )
     except ClerkTokenError as exc:
+        if is_development:
+            diagnostics = jwks_client.get_diagnostics()
+            detail = {
+                "error": {
+                    "code": exc.error_code,
+                    "message": str(exc),
+                    "request_id": str(uuid.uuid4())[:8],
+                    "jwks": diagnostics,
+                }
+            }
+            raise HTTPException(status_code=401, detail=detail) from exc
         raise _auth_error(401, str(exc), exc.error_code) from exc
