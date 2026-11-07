@@ -95,8 +95,29 @@ export default function ContentReviewPage() {
   }, [workspaceId, contentItemId, authStatus])
 
   useEffect(() => {
-    fetchContentVersions()
-  }, [fetchContentVersions])
+    if (!workspaceId || authStatus !== 'ready') return
+    let cancelled = false
+    async function hydrate() {
+      try {
+        const data = await api.getContentItems(workspaceId)
+        const items = data.content_items || []
+        if (cancelled || items.length === 0) return
+        const item = items[0]
+        const vres = await api.getContentVersions(workspaceId, item.id)
+        const versions = vres.versions || []
+        if (cancelled || versions.length === 0) return
+        const latest = versions[versions.length - 1]
+        setContentItemId(item.id)
+        setSubmission({ content_item_id: item.id, content_version_id: latest.id })
+        setContentVersions(versions)
+      } catch {
+        // ignore hydration errors
+      }
+    }
+    hydrate()
+    return () => { cancelled = true }
+  }, [workspaceId, authStatus])
+
 
   const handleSubmitted = useCallback((result) => {
     setSubmission(result)
@@ -122,7 +143,7 @@ export default function ContentReviewPage() {
             ? 'Session expired. Please sign in again.'
             : 'You do not have access to this workspace.')
         } else {
-          setReviewError('Analysis failed. Please try again.')
+          setReviewError(err?.message || 'Analysis failed. Please try again.')
         }
         setAnalysisLoading(false)
         setVersionLoading(false)

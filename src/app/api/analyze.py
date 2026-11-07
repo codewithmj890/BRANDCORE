@@ -23,6 +23,10 @@ from app.repositories.terminology_repo import TerminologyRepository
 from app.repositories.dependency_repo import ClaimFactDependencyRepository
 from app.repositories.event_repo import AuditEventRepository
 
+import logging
+
+logger = logging.getLogger("brandcore.api.analyze")
+
 router = APIRouter()
 
 
@@ -97,6 +101,7 @@ async def analyze(workspace_id: str, content_version_id: str,
         status = 502 if "unavailable" in str(exc) or "service error" in str(exc) else 422
         raise HTTPException(status_code=status, detail=str(exc))
     except Exception as exc:  # D1 or other infrastructure failure
-        raise HTTPException(status_code=500, detail="Analysis failed")
+        logger.exception("Analysis failed for workspace %s version %s", workspace_id, content_version_id)
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {exc}")
 
     return AnalyzeResponse(**result)

@@ -226,7 +226,8 @@ export const api = {
   submitContent: (workspaceId, content) =>
     protectedRequest('POST', `/workspaces/${workspaceId}/content`, content),
 
-  getContentVersions: (workspaceId, contentItemId) =>
+  getContentItems: (workspaceId) =>
+    protectedRequest('GET', `/workspaces/${workspaceId}/content`),
     protectedRequest('GET', `/workspaces/${workspaceId}/content/${contentItemId}/versions`),
 
   analyzeContent: (workspaceId, contentVersionId) =>

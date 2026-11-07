@@ -14,10 +14,10 @@
  */
 import { useEffect, useCallback } from 'react'
 
-const COLLAPSED_WIDTH = 'w-18'   // 72px — circular icon controls only
-const EXPANDED_WIDTH = 'w-58'    // 232px — circular icons + labels
+const COLLAPSED_WIDTH = 'w-[72px]'   // 72px — circular icon controls only
+const EXPANDED_WIDTH = 'w-[232px]'    // 232px — circular icons + labels
 
-const ICON_SIZE = 'w-[21px] h-[21px]'   // 21px icons
+const ICON_SIZE = 'w-[22px] h-[22px]'   // 22px icons
 const ICON_BTN_SIZE = 'w-11 h-11'       // 44px inner circular icon container
 
 const ICONS = {
@@ -42,7 +42,7 @@ const ICONS = {
     </svg>
   ),
   evidence: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={ICON_SIZE}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[26px] h-[26px]">
       <circle cx="12" cy="12" r="4" /><path d="M7 12h10M12 7v10" />
     </svg>
   ),

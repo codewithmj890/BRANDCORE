@@ -29,9 +29,11 @@ export function WorkspaceProvider({ children }) {
           setWorkspaceName(null)
         }
       } else if (status === 403) {
-        setAuthStatus('no-workspace')
-        setWorkspaceId(null)
-        setWorkspaceName(null)
+        setAuthStatus((prev) => (prev === 'ready' ? 'ready' : 'no-workspace'))
+        if (authStatus !== 'ready') {
+          setWorkspaceId(null)
+          setWorkspaceName(null)
+        }
       }
     }, [isSignedIn])
     return unsubscribe
@@ -84,21 +86,16 @@ export function WorkspaceProvider({ children }) {
       } else {
         setAuthStatus('no-workspace')
       }
-    } catch (err) {
-      if (err.status === 401) {
-        // Backend rejected token but Clerk says signed in.
-        // Don't force sign-in modal — keep current state.
-        return
-      } else if (err.status === 403) {
-        setAuthStatus('no-workspace')
-        setWorkspaceId(null)
-        setWorkspaceName(null)
-      } else {
-        setAuthStatus('no-workspace')
-        setWorkspaceId(null)
-        setWorkspaceName(null)
-      }
-    }
+     } catch (err) {
+       if (err.status === 401) {
+         return
+       } else if (err.status === 403 || err.status === 404) {
+         setAuthStatus('no-workspace')
+         setWorkspaceId(null)
+         setWorkspaceName(null)
+       }
+       // Other errors: preserve existing workspace state
+     }
   }, [])
 
   const value = {

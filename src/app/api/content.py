@@ -79,7 +79,7 @@ async def create_content(
         "content_item_id": item_id,
         "content_version_id": version_id,
         "sha256_hash": sha,
-        "created_at": version.created_at if hasattr(version, "created_at") else d.get("created_at"),
+        "created_at": version.created_at if hasattr(version, "created_at") else None,
     }
 
 
