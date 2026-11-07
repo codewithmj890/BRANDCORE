@@ -11,8 +11,7 @@
  * - Hidden; overlay drawer controlled by AppShell
  * - Escape-to-close, backdrop click to close, body scroll lock
  */
-import { useState, useEffect, useCallback } from 'react'
-import { useWorkspace } from '@/context/WorkspaceContext'
+import { useEffect, useCallback } from 'react'
 
 const COLLAPSED_WIDTH = 'w-20'   // 80px — icon only
 const EXPANDED_WIDTH = 'w-64'    // 256px — icons + labels
@@ -25,13 +24,6 @@ const NAV_ITEMS = [
 ]
 
 export function Sidebar({ activeItem, onItemClick, isCollapsed, onCollapseChange, isOpen, onClose }) {
-  const { workspaceName } = useWorkspace()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   const handleToggleCollapse = useCallback(() => {
     onCollapseChange((prev) => !prev)
   }, [onCollapseChange])

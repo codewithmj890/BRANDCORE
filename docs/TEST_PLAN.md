@@ -32,53 +32,53 @@
 
 | ID | Scenario | Expected | Status |
 |----|----------|----------|--------|
-| T-BE-01 | GET /api/health returns 200 with `{"status": "ok"}` | 200 OK | TODO |
+| T-BE-01 | GET /api/health returns 200 with `{"status": "ok"}` | 200 OK | VERIFIED — health route and API protection suite |
 
 ### 3.2 Deterministic Checks (Unit)
 
 | ID | Scenario | Expected | Status |
 |----|----------|----------|--------|
-| T-BE-10 | Content with no matching approved fact → UNSUPPORTED_CLAIM finding | Finding returned | TODO |
-| T-BE-11 | Content with numeric value differing from approved fact → NUMERIC_MISMATCH | Finding returned | TODO |
-| T-BE-12 | Content with claim exceeding evidence strength → CLAIM_STRONGER_THAN_EVIDENCE | Finding returned | TODO |
-| T-BE-13 | Content missing required qualifier → MISSING_QUALIFIER | Finding returned | TODO |
-| T-BE-14 | Content with out-of-scope product/region → SCOPE_MISMATCH | Finding returned | TODO |
-| T-BE-15 | Content with expired date/offer → EXPIRED_OFFER | Finding returned | TODO |
-| T-BE-16 | Content with unapproved terminology → UNAPPROVED_TERMINOLOGY | Finding returned | TODO |
-| T-BE-17 | Content with all approved claims → zero findings | No findings | TODO |
+| T-BE-10 | Content with no matching approved fact → UNSUPPORTED_CLAIM finding | Finding returned | VERIFIED — verification engine tests |
+| T-BE-11 | Content with numeric value differing from approved fact → NUMERIC_MISMATCH | Finding returned | VERIFIED — verification engine tests |
+| T-BE-12 | Content with claim exceeding evidence strength → CLAIM_STRONGER_THAN_EVIDENCE | Finding returned | VERIFIED — verification engine tests |
+| T-BE-13 | Content missing required qualifier → MISSING_QUALIFIER | Finding returned | VERIFIED — verification engine tests |
+| T-BE-14 | Content with out-of-scope product/region → SCOPE_MISMATCH | Finding returned | VERIFIED — verification engine tests |
+| T-BE-15 | Content with expired date/offer → EXPIRED_OFFER | Finding returned | VERIFIED — verification engine tests |
+| T-BE-16 | Content with unapproved terminology → UNAPPROVED_TERMINOLOGY | Finding returned | VERIFIED — verification engine tests |
+| T-BE-17 | Content with all approved claims → zero findings | No findings | VERIFIED — verification engine tests |
 
 ### 3.3 Content Version Immutability
 
 | ID | Scenario | Expected | Status |
 |----|----------|----------|--------|
-| T-BE-20 | Attempt to UPDATE a content_version row | Error / no-op | TODO |
-| T-BE-21 | Submitting edited content creates a new version, not a mutation | New version ID returned | TODO |
-| T-BE-22 | SHA-256 hash matches content body | Hash verified | TODO |
+| T-BE-20 | Attempt to UPDATE a content_version row | Error / no-op | VERIFIED — repository immutability tests |
+| T-BE-21 | Submitting edited content creates a new version, not a mutation | New version ID returned | VERIFIED — content API tests |
+| T-BE-22 | SHA-256 hash matches content body | Hash verified | VERIFIED — release API tests |
 
 ### 3.4 Release Passport
 
 | ID | Scenario | Expected | Status |
 |----|----------|----------|--------|
-| T-BE-30 | Approve a content version → Release Passport created with correct fields | Passport created | TODO |
-| T-BE-31 | Attempt to UPDATE a release_passport row | Error / no-op | TODO |
-| T-BE-32 | Change an approved fact → dependent passports receive STALE status event | STALE event recorded | TODO |
-| T-BE-33 | Historical passport is not rewritten after fact change | Original passport unchanged | TODO |
+| T-BE-30 | Approve a content version → Release Passport created with correct fields | Passport created | VERIFIED — release API tests |
+| T-BE-31 | Attempt to UPDATE a release_passport row | Error / no-op | VERIFIED — repository immutability tests |
+| T-BE-32 | Change an approved fact → dependent passports receive STALE status event | STALE event recorded | VERIFIED — stale detection repository tests |
+| T-BE-33 | Historical passport is not rewritten after fact change | Original passport unchanged | VERIFIED — stale detection repository tests |
 
 ### 3.5 Authorization
 
 | ID | Scenario | Expected | Status |
 |----|----------|----------|--------|
-| T-BE-40 | Content creator attempts to approve their own content version | 403 Forbidden | TODO |
-| T-BE-41 | Request with wrong workspace_id cannot access another workspace's data | 403 or 404 | TODO |
-| T-BE-42 | Client-supplied role header is not trusted | Server-side role used | TODO |
+| T-BE-40 | Content creator attempts to approve their own content version | 403 Forbidden | VERIFIED — review API tests |
+| T-BE-41 | Request with wrong workspace_id cannot access another workspace's data | 403 or 404 | VERIFIED — workspace authorization tests |
+| T-BE-42 | Client-supplied role header is not trusted | Server-side role used | VERIFIED — API protection tests |
 
 ### 3.6 Input Validation
 
 | ID | Scenario | Expected | Status |
 |----|----------|----------|--------|
-| T-BE-50 | Content body exceeds max length | 422 Validation Error | TODO |
-| T-BE-51 | SQL injection attempt in content body | Parameterized query; no injection | TODO |
-| T-BE-52 | Malformed JSON request body | 422 Validation Error | TODO |
+| T-BE-50 | Content body exceeds max length | 400 Validation Error | VERIFIED — content API validation tests |
+| T-BE-51 | SQL injection attempt in content body | Parameterized query; no injection | VERIFIED — forensic regression tests |
+| T-BE-52 | Malformed JSON request body | 400 Validation Error | VERIFIED — global JSON decode handler |
 
 ---
 

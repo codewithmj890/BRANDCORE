@@ -3,11 +3,11 @@
  * Application header with brand, workspace context, backend status, theme toggle,
  * and user controls. Uses Clerk for authentication.
  */
-import { Show, UserButton, OrganizationSwitcher, useAuth } from '@clerk/react'
+import { UserButton, OrganizationSwitcher, useAuth } from '@clerk/react'
 import { ThemeToggle } from '../ui/theme/ThemeToggle'
 
 export function TopBar({ workspace, backendStatus, onSidebarToggle, isSidebarOpen }) {
-  const { isSignedIn, isLoaded } = useAuth()
+  const { isSignedIn } = useAuth()
 
   return (
     <header
@@ -36,14 +36,18 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, isSidebarOpe
             <span className="w-2 h-2 rounded-full">
               {backendStatus === 'connected' ? (
                 <span className="bg-green-700" />
-              ) : backendStatus === 'connecting' ? (
+              ) : backendStatus === 'connecting' || backendStatus === 'checking' ? (
                 <span className="bg-amber-700 animate-pulse" />
               ) : (
                 <span className="bg-red-700" />
               )}
             </span>
             <span className="text-text-secondary">
-              {backendStatus === 'connected' ? 'Backend connected' : backendStatus === 'connecting' ? 'Connecting…' : 'Backend offline'}
+              {backendStatus === 'connected'
+                ? 'Backend connected'
+                : backendStatus === 'connecting' || backendStatus === 'checking'
+                  ? 'Checking backend…'
+                  : 'Backend offline'}
             </span>
           </div>
 
@@ -51,13 +55,6 @@ export function TopBar({ workspace, backendStatus, onSidebarToggle, isSidebarOpe
 
           {isSignedIn ? (
             <>
-              <OrganizationSwitcher
-                appearance={{
-                  elements: {
-                    organizationSwitcherTrigger: 'bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-surface-muted focus:ring-focus focus:ring-2 rounded-md px-2 py-1',
-                  },
-                }}
-              />
               <UserButton
                 afterSignOutUrl="/"
                 appearance={{

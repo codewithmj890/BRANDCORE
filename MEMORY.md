@@ -77,6 +77,7 @@
 - [x] **M5-05 VERIFIED:** Backend API endpoints for all 6 resource types — workspaces (GET), facts (GET/POST/GET/PATCH), evidence (GET/GET), content (POST/GET/GET/versions/version), review (POST/GET), releases (GET/GET/stale-impact). All routes registered in `src/app/main.py` with `require_workspace_access` auth. 48 integration tests pass (`backend/tests/test_*.py`). Local Worker verified via `wrangler dev --local --config wrangler.local.jsonc` — `GET /api/health` returns HTTP 200 `{"status":"ok","version":"0.1.0"}` — 2026-11-05
 - [x] Frontend `npm run build`: success — 2026-11-05
 - [x] All 17 tests pass (M1 baseline); 44/44 pass (M2); 130/130 pass (M3 full regression); 192/192 pass (with Clerk auth) — 2026-11-05
+- [x] Frontend content review workflow uses authenticated content, analysis, version-history, and review APIs; frontend build and lint pass — 2026-11-05
 
 ---
 
@@ -89,6 +90,8 @@
 ## Blockers & Decisions Required
 
 - **Cloudflare account IDs:** `wrangler.jsonc` still has `<D1_DATABASE_ID>` placeholder. Real ID requires user approval.
+- **Frontend tooling gaps:** no Vitest (T-FE-10..15 need an ADR to add it); `npm run lint` broken — ESLint 9 needs `eslint.config.js` and rejects `--ext`.
+- **Content API endpoints missing:** `POST /content`, `GET /content/:id/versions`, `POST /review` are PROPOSED only; M4-05 blocked on them. Enum casing differs between API_CONTRACT (UPPERCASE) and DB/engine (lowercase) — needs Mritunjay to confirm before M4-02 mocks.
 - **Commit and push:** M2-01 commit `d0729e4` and subsequent M2/M3 work not yet pushed to `origin/develop` (remote `codewithmj890/BRANDCORE`, default branch `develop` at `80d592d`). Requires explicit user approval before committing/pushing.
 
 ---
@@ -138,7 +141,7 @@ Gate B and Gate B-sub approved. `brandcore.workers.dev` registered.
 
 ## NEXT ACTION
 
-**Task:** Proceed to M6 integration (replace mock APIs with real endpoints) or address blockers; user decision required.
-**Branch:** `feature/mritunjay/ui-redesign` (committed `2a023ef`, pushed to origin; Clerk auth + UI redesign complete, 192/192 backend tests pass)
+**Task:** Complete authenticated end-to-end integration and update security evidence.
+**Branch:** Current working branch; backend Clerk auth and frontend API integration are implemented.
 
-*Last updated: 2026-11-05 — Clerk authentication implemented and verified; 192/192 backend tests pass; migration 0005 created but not yet applied to local D1 state*
+*Last updated: 2026-11-05 — Clerk authentication and frontend API integration verified; application-shell axe scan passes.*

@@ -51,10 +51,9 @@ export default function EvidenceLibraryPage() {
     setLoading(true)
     setError(null)
     try {
-      // Evidence listing endpoint not yet implemented — will fall back to demo
-      const data = await api.getWorkspace(workspaceId)
-      setDemoMode(true)
-      setEvidence(DEMO_EVIDENCE)
+      const data = await api.getEvidence(workspaceId)
+      setDemoMode(false)
+      setEvidence(data.evidence || [])
     } catch (err) {
       if (err.status === 401 || err.status === 403) {
         setError(err.status === 401
@@ -65,9 +64,8 @@ export default function EvidenceLibraryPage() {
         setError('Workspace not found.')
         setDemoMode(false)
       } else {
-        setDemoMode(true)
-        setEvidence(DEMO_EVIDENCE)
-        setError(null)
+        setDemoMode(false)
+        setError(err.message || 'Unable to load evidence library.')
       }
     } finally {
       setLoading(false)

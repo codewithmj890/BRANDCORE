@@ -1,9 +1,9 @@
 /**
  * BRANDCORE — Mock Fixtures (DEMO MODE ONLY)
- * 
+ *
  * These fixtures are used when backend endpoints are not yet available.
  * They are clearly labeled as demo data and must NOT be presented as live data.
- * 
+ *
  * Source: docs/PRD.md §4 — seeded fictional demo brand workspace
  */
 

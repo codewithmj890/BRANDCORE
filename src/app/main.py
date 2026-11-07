@@ -1,5 +1,8 @@
-from fastapi import Depends, FastAPI
+import json
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from .api.health import router as health_router
 from .api.poc import router as poc_router
 from .api.analyze import router as analyze_router
@@ -13,6 +16,23 @@ from .api.dependencies import require_development_env
 from .auth.dependencies import require_workspace_access, require_workspace_permission
 
 app = FastAPI(title="BRANDCORE API", version="0.1.0", docs_url=None, redoc_url=None)
+
+
+@app.exception_handler(json.JSONDecodeError)
+async def handle_malformed_json(request: Request, exc: json.JSONDecodeError):
+    return JSONResponse(status_code=400, content={"detail": "Malformed JSON request body"})
+
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
+    )
+    return response
 
 app.add_middleware(
     CORSMiddleware,

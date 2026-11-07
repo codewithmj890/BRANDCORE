@@ -144,4 +144,3 @@ class TestEvidenceGet:
         client = TestClient(app)
         resp = client.get("/api/workspaces/ws-1/evidence/ev-1")
         assert resp.status_code == 401
-

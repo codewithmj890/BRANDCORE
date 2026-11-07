@@ -1,195 +1,100 @@
 /**
- * BRANDCORE — API Client
- * All requests use relative /api paths — no hardcoded origins.
- *
- * Two request types:
- *   - publicRequest: no Authorization header (for /api/health)
- *   - protectedRequest: Clerk session token as Bearer (all other endpoints)
- *
- * Uses Clerk's default session token (no custom template). Clerk returns 404
- * when a requested JWT template doesn't exist, so we never request one.
- *
- * Backend status tracking for honest connectivity display.
- * Auth errors (401/403) are surfaced to the caller — never silently
- * replaced with demo data.
+ * BRANDCORE API client.
+ * All requests use relative /api paths and protected endpoints carry the
+ * current Clerk session token.
  */
-import { getToken } from '@clerk/react'
-
 const BASE = '/api'
-
 let statusListeners = []
 let authErrorListeners = []
+let tokenProvider = null
 
 function notifyStatus(status) {
-  statusListeners.forEach((cb) => cb(status))
+  statusListeners.forEach((callback) => callback(status))
 }
 
 function notifyAuthError(status) {
-  authErrorListeners.forEach((cb) => cb(status))
+  authErrorListeners.forEach((callback) => callback(status))
 }
 
 export function onBackendStatusChange(callback) {
   statusListeners.push(callback)
   return () => {
-    statusListeners = statusListeners.filter((cb) => cb !== callback)
+    statusListeners = statusListeners.filter((item) => item !== callback)
   }
 }
 
 export function onAuthError(callback) {
   authErrorListeners.push(callback)
   return () => {
-    authErrorListeners = authErrorListeners.filter((cb) => cb !== callback)
+    authErrorListeners = authErrorListeners.filter((item) => item !== callback)
   }
 }
 
-// Public requests — no Clerk token
-async function publicHeaders() {
-  return { 'Content-Type': 'application/json' }
+export function setAuthTokenProvider(provider) {
+  tokenProvider = provider
 }
 
-// Protected requests — Clerk default session token
-async function protectedHeaders() {
+async function request(method, path, body, protectedEndpoint = true) {
   const headers = { 'Content-Type': 'application/json' }
-  let token = null
-  try {
-    token = await getToken()
-  } catch {
-    // Clerk session not available — proceed without Authorization header
-  }
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-  return headers
-}
-
-async function publicRequest(method, path, body) {
-  const options = {
-    method,
-    headers: await publicHeaders(),
-  }
-  if (body !== undefined) {
-    options.body = JSON.stringify(body)
+  if (protectedEndpoint) {
+    try {
+      const token = tokenProvider ? await tokenProvider() : null
+      if (token) headers.Authorization = 'Bearer ' + token
+    } catch {
+      // The backend returns 401 when no Clerk session is available.
+    }
   }
 
-  notifyStatus('connecting')
-
+  const options = { method, headers }
+  if (body !== undefined) options.body = JSON.stringify(body)
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 8000)
-
-  try {
-    const res = await fetch(`${BASE}${path}`, { ...options, signal: controller.signal })
-    clearTimeout(timeoutId)
-
-    notifyStatus('connected')
-    const data = await res.json()
-    if (!res.ok) {
-      const err = new Error(data?.error?.message ?? 'Request failed')
-      err.code = data?.error?.code
-      err.status = res.status
-      throw err
-    }
-    return data
-  } catch (err) {
-    clearTimeout(timeoutId)
-    if (err.name === 'AbortError') {
-      notifyStatus('offline')
-    } else if (err.status !== 401 && err.status !== 403) {
-      notifyStatus('connected')
-    }
-    throw err
-  }
-}
-
-async function protectedRequest(method, path, body) {
-  const options = {
-    method,
-    headers: await protectedHeaders(),
-  }
-  if (body !== undefined) {
-    options.body = JSON.stringify(body)
-  }
-
   notifyStatus('connecting')
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 8000)
-
   try {
-    const res = await fetch(`${BASE}${path}`, { ...options, signal: controller.signal })
-    clearTimeout(timeoutId)
-
-    if (res.status === 401) {
-      notifyStatus('connected')
-      notifyAuthError(401)
-      const data = await res.json().catch(() => ({}))
-      const err = new Error(data?.error?.message ?? 'Unauthorized')
-      err.status = 401
-      err.code = data?.error?.code
-      throw err
+    const response = await fetch(`${BASE}${path}`, { ...options, signal: controller.signal })
+    const data = await response.json().catch(() => null)
+    if (response.status === 401 || response.status === 403) {
+      notifyAuthError(response.status)
     }
-
-    if (res.status === 403) {
-      notifyStatus('connected')
-      notifyAuthError(403)
-      const data = await res.json().catch(() => ({}))
-      const err = new Error(data?.error?.message ?? 'Forbidden')
-      err.status = 403
-      err.code = data?.error?.code
-      throw err
+    if (!response.ok) {
+      const error = new Error(data?.error?.message || data?.detail || 'Request failed')
+      error.code = data?.error?.code
+      error.field = data?.error?.field
+      error.status = response.status
+      throw error
     }
-
     notifyStatus('connected')
-    const data = await res.json()
-    if (!res.ok) {
-      const err = new Error(data?.error?.message ?? 'Request failed')
-      err.code = data?.error?.code
-      err.status = res.status
-      throw err
-    }
     return data
-  } catch (err) {
-    clearTimeout(timeoutId)
-    if (err.name === 'AbortError') {
-      notifyStatus('offline')
-    } else if (err.status !== 401 && err.status !== 403) {
-      notifyStatus('connected')
+  } catch (error) {
+    notifyStatus(error.name === 'AbortError' ? 'offline' : 'connected')
+    if (error.name === 'AbortError') {
+      error.code = 'NETWORK_TIMEOUT'
+      error.message = 'The request timed out. Please try again.'
     }
-    throw err
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 
 export const api = {
-  health: () => publicRequest('GET', '/health'),
-
-  listWorkspaces: () => protectedRequest('GET', '/workspaces'),
-
-  getWorkspace: (workspaceId) =>
-    protectedRequest('GET', `/workspaces/${workspaceId}`),
-
-  getFacts: (workspaceId) =>
-    protectedRequest('GET', `/workspaces/${workspaceId}/facts`),
-
-  createFact: (workspaceId, fact) =>
-    protectedRequest('POST', `/workspaces/${workspaceId}/facts`, fact),
-
-  submitContent: (workspaceId, content) =>
-    protectedRequest('POST', `/workspaces/${workspaceId}/content`, content),
-
+  health: () => request('GET', '/health', undefined, false),
+  listWorkspaces: () => request('GET', '/workspaces'),
+  getWorkspace: (workspaceId) => request('GET', `/workspaces/${workspaceId}`),
+  getFacts: (workspaceId) => request('GET', `/workspaces/${workspaceId}/facts`),
+  createFact: (workspaceId, fact) => request('POST', `/workspaces/${workspaceId}/facts`, fact),
+  getEvidence: (workspaceId) => request('GET', `/workspaces/${workspaceId}/evidence`),
+  submitContent: (workspaceId, content) => request('POST', `/workspaces/${workspaceId}/content`, content),
   getContentVersions: (workspaceId, contentItemId) =>
-    protectedRequest('GET', `/workspaces/${workspaceId}/content/${contentItemId}/versions`),
-
+    request('GET', `/workspaces/${workspaceId}/content/${contentItemId}/versions`),
   analyzeContent: (workspaceId, contentVersionId) =>
-    protectedRequest('POST', `/workspaces/${workspaceId}/content/${contentVersionId}/analyze`),
-
+    request('POST', `/workspaces/${workspaceId}/content/${contentVersionId}/analyze`),
   submitReview: (workspaceId, contentVersionId, decision) =>
-    protectedRequest('POST', `/workspaces/${workspaceId}/content/${contentVersionId}/review`, decision),
-
-  getReleases: (workspaceId) =>
-    protectedRequest('GET', `/workspaces/${workspaceId}/releases`),
-
+    request('POST', `/workspaces/${workspaceId}/content/${contentVersionId}/review`, decision),
+  getReleases: (workspaceId) => request('GET', `/workspaces/${workspaceId}/releases`),
+  createRelease: (workspaceId, release) => request('POST', `/workspaces/${workspaceId}/releases`, release),
   getStaleImpact: (workspaceId, releaseId) =>
-    protectedRequest('GET', `/workspaces/${workspaceId}/releases/${releaseId}/stale-impact`),
-
-  provisionWorkspace: (name, slug) =>
-    protectedRequest('POST', '/workspaces/provision', { name, slug }),
+    request('GET', `/workspaces/${workspaceId}/releases/${releaseId}/stale-impact`),
+  provisionWorkspace: (name, slug) => request('POST', '/workspaces/provision', { name, slug }),
 }

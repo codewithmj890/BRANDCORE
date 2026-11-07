@@ -18,6 +18,7 @@ from app.domain.models import (
     ContentItem, ContentItemCreate, ContentVersion, ContentVersionCreate,
 )
 from app.repositories.content_repo import ContentItemRepository, ContentVersionRepository
+from app.repositories.review_repo import ReviewDecisionRepository
 
 router = APIRouter()
 
@@ -79,7 +80,7 @@ async def create_content(
         "content_item_id": item_id,
         "content_version_id": version_id,
         "sha256_hash": sha,
-        "created_at": version.created_at if hasattr(version, "created_at") else d.get("created_at"),
+        "created_at": version.created_at,
     }
 
 
@@ -149,16 +150,22 @@ async def list_content_versions(
         raise HTTPException(status_code=404, detail="Content item not found")
 
     result = await repo.list_by_item(content_item_id, workspace_id, order="asc")
+    review_repo = ReviewDecisionRepository(db)
     versions = []
     for v in result.items:
         d = v.model_dump() if hasattr(v, "model_dump") else dict(v)
+        reviews = await review_repo.list_by_version(d["id"], workspace_id)
+        latest_review = reviews.items[-1] if reviews.items else None
+        review_status = (
+            latest_review.decision.upper() if latest_review is not None else "PENDING"
+        )
         versions.append({
             "id": d["id"],
             "content_item_id": d["content_item_id"],
             "version_number": d["version_number"],
             "sha256_hash": d["sha256_hash"],
             "created_at": d["created_at"],
-            "review_status": "PENDING",  # Derived from review decisions
+            "review_status": review_status,
         })
     return {"versions": versions}
 

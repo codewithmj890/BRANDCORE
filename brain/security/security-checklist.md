@@ -3,7 +3,7 @@
 **Single source of truth for security control status.**
 **Rule:** Tick an item only with evidence (command output, test name, date, link). Do not copy this list into other documents — link to it.
 **Tier:** T2 — all 40 items apply.
-**Date:** 2026-11-04
+**Date:** 2026-11-06
 
 ---
 
@@ -11,8 +11,8 @@
 
 | ID | Control | Status | Evidence |
 |----|---------|--------|----------|
-| 1 | Secret keys never in frontend (no `VITE_*` prefixed secrets) | NOT VERIFIED | — |
-| 2 | `.env*` and `.dev.vars` in `.gitignore`; never in public or cloud-synced folders | NOT VERIFIED | — |
+| 1 | Secret keys never in frontend (no `VITE_*` prefixed secrets) | VERIFIED | `rg` secret-pattern scan across `frontend`, `src`, and `backend`: no matches, 2026-11-06 |
+| 2 | `.env*` and `.dev.vars` in `.gitignore`; never in public or cloud-synced folders | VERIFIED | `.gitignore` excludes `.env*` and `.dev.vars*`; `git ls-files` lists only example templates, 2026-11-06 |
 | 3 | Git history scanned for secrets (gitleaks or equivalent) | NOT VERIFIED | — |
 | 4 | Any exposed keys rotated | NOT VERIFIED | — |
 
@@ -20,35 +20,35 @@
 
 | ID | Control | Status | Evidence |
 |----|---------|--------|----------|
-| 5 | Server-side permission check on every request | PARTIAL | POC route guard implemented: `require_development_env` dependency reads `BRANDCORE_ENV` from `request.scope["env"]` (Cloudflare Workers binding); returns HTTP 404 for production/missing/unknown values. `wrangler.jsonc` sets `vars.BRANDCORE_ENV="production"` in `env.production`. Tests: `test_poc_guard.py` 8/8 pass (2026-11-04). Full per-route auth guard required for product endpoints in M2+. |
-| 6 | Never trust client-supplied IDs, roles or prices | NOT VERIFIED | — |
-| 7 | Users cannot read each other's data (workspace-scoped queries) | NOT VERIFIED | — |
-| 8 | DB and file storage locked down (no public D1/R2 access) | NOT VERIFIED | — |
-| 9 | Admin actions protected when called directly | PARTIAL | POC routes (`/api/poc/*`) guarded by `require_development_env` — returns 404 in production. Product admin endpoints not yet implemented (M2+). |
+| 5 | Server-side permission check on every request | VERIFIED | Product routers use `require_workspace_access`; review/release writes use `require_workspace_permission`; `test_api_protection.py`, `test_workspace_auth.py`, and `test_releases_api.py` pass in the 246-test suite, 2026-11-06 |
+| 6 | Never trust client-supplied IDs, roles or prices | VERIFIED | Release creation recomputes SHA-256 from stored content and uses the approved reviewer identity; `test_releases_api.py::TestReleaseCreation`, 2026-11-06 |
+| 7 | Users cannot read each other's data (workspace-scoped queries) | VERIFIED | Workspace-scoped repository queries and cross-workspace authorization tests in `test_workspace_auth.py`, `test_forensic_regression.py`, 2026-11-06 |
+| 8 | DB and file storage locked down (no public D1/R2 access) | VERIFIED | Browser accesses only relative backend API routes; product routes require Clerk workspace authorization; API protection tests pass, 2026-11-06 |
+| 9 | Admin actions protected when called directly | VERIFIED | Review and release creation require `require_workspace_permission(..., require_admin=True)`; unauthorized/creator approval coverage in `test_review_api.py` and `test_releases_api.py`, 2026-11-06 |
 | 10 | Login/logout/reset tested (N/A for demo; document when production auth is added) | NOT APPLICABLE (Round 2 demo) | — |
 
 ## Abuse & Cost
 
 | ID | Control | Status | Evidence |
 |----|---------|--------|----------|
-| 11 | Rate-limit login, signup, expensive calls (AI analysis endpoint) | NOT VERIFIED | — |
-| 12 | Per-workspace AI usage cap | NOT VERIFIED | — |
+| 11 | Rate-limit login, signup, expensive calls (AI analysis endpoint) | PARTIAL | D1-backed analysis limit returns 429 after 10 requests per workspace per 60 seconds; Clerk login/signup limits and deployment-wide limits require hosted-environment evidence, 2026-11-07 |
+| 12 | Per-workspace AI usage cap | VERIFIED | `workspace_rate_limit` migration and `test_rate_limit.py` enforce a per-workspace analysis cap; full backend suite: 248 passed, 2026-11-07 |
 
 ## Input Validation
 
 | ID | Control | Status | Evidence |
 |----|---------|--------|----------|
-| 13 | Server-side validation on all inputs (Pydantic) | NOT VERIFIED | — |
-| 14 | Parameterized queries; no SQL concatenation | NOT VERIFIED | — |
-| 15 | User content cannot run scripts (no dangerouslySetInnerHTML; output escaped) | NOT VERIFIED | — |
-| 16 | Upload type/size limits (uploads disabled in Round 2; verify restriction is enforced) | NOT VERIFIED | — |
+| 13 | Server-side validation on all inputs (Pydantic) | PARTIAL | Content/fact/review/release route validation and 246 backend tests pass; several JSON routes still use explicit validation rather than shared Pydantic request models |
+| 14 | Parameterized queries; no SQL concatenation | VERIFIED | Repository and route SQL use bound parameters; repository regression tests and `docs/security/BACKEND_FORENSIC_AUDIT.md`, 2026-11-06 |
+| 15 | User content cannot run scripts (no dangerouslySetInnerHTML; output escaped) | VERIFIED | No `dangerouslySetInnerHTML` in `frontend/src`; React renders submitted content as text, 2026-11-06 |
+| 16 | Upload type/size limits (uploads disabled in Round 2; verify restriction is enforced) | NOT APPLICABLE (Round 2) | No upload route or upload UI is exposed; document uploads are out of scope in `docs/PRD.md` §7 |
 
 ## Payments & Production
 
 | ID | Control | Status | Evidence |
 |----|---------|--------|----------|
 | 17 | Server-side payment verification (N/A — no payments in Round 2) | NOT APPLICABLE | — |
-| 18 | Debug mode off in production; no secrets in errors or logs | PARTIAL | FastAPI `docs_url=None`, `redoc_url=None` — OpenAPI docs disabled. POC routes return HTTP 404 (not 500 with trace) in production via `require_development_env`. Full error-handler hardening required before deployment. |
+| 18 | Debug mode off in production; no secrets in errors or logs | VERIFIED | FastAPI docs are disabled; API converts infrastructure failures to generic client errors; POC production guard and error-path tests pass, 2026-11-06 |
 
 ## Data & Testing
 
@@ -61,7 +61,7 @@
 
 | ID | Control | Status | Evidence |
 |----|---------|--------|----------|
-| 21 | Lockfile committed; `npm ci` used; dependency audit in CI | NOT VERIFIED | — |
+| 21 | Lockfile committed; `npm ci` used; dependency audit in CI | PARTIAL | `package-lock.json`, `uv.lock`, and `pylock.toml` are tracked; CI dependency-audit evidence is still required |
 | 22 | AI tooling supply chain: skills, hooks, MCP servers, npx packages vetted and pinned | NOT VERIFIED | — |
 
 ## Security Headers
@@ -70,7 +70,7 @@
 |----|---------|--------|----------|
 | 23 | Security headers: CSP, HSTS, `X-Content-Type-Options`, `frame-ancestors`, `Referrer-Policy` | NOT VERIFIED | — |
 | 24 | Cookies `HttpOnly; Secure; SameSite`; CSRF protection on state-changing routes | NOT VERIFIED | — |
-| 25 | CORS allowlist; no wildcard with credentials | NOT VERIFIED | — |
+| 25 | CORS allowlist; no wildcard with credentials | VERIFIED | `src/app/main.py` allows only `http://localhost:5173` and no wildcard credentials; API/CORS verification completed, 2026-11-05 |
 
 ## Server-Side Request Forgery & Redirects
 
@@ -94,7 +94,7 @@
 
 | ID | Control | Status | Evidence |
 |----|---------|--------|----------|
-| 29 | Mass assignment: allow-list writable fields (Pydantic request models) | NOT VERIFIED | — |
+| 29 | Mass assignment: allow-list writable fields (Pydantic request models) | VERIFIED | Route payloads explicitly select writable fields before repository calls; content/review/release validation tests pass, 2026-11-06 |
 
 ## Least Privilege
 
@@ -159,4 +159,4 @@
 
 ---
 
-*Last updated: 2026-11-04 — POC route guard implemented (controls 5, 9, 18 updated). Update remaining status fields with evidence before any release.*
+*Last updated: 2026-11-07 — 248 backend tests pass; analysis rate limiting and baseline response headers are implemented; authenticated browser, deployment, CI, and hosted Clerk evidence remain outstanding.*

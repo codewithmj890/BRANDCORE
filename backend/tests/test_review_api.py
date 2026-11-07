@@ -191,4 +191,3 @@ class TestReviewGet:
         data = resp.json()
         assert len(data["decisions"]) == 1
         assert data["decisions"][0]["decision"] == "APPROVED"
-

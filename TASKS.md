@@ -75,8 +75,8 @@
 | M4-02 | Findings display: finding card component with all 7 finding types | Rahul | DONE | M4-01 | Each finding type renders correctly; color + text label; no dangerouslySetInnerHTML |
 | M4-03 | Review decision UI: approve / request changes / reject | Rahul | DONE | M4-02 | Decision recorded; confirmation shown; no auto-approval path |
 | M4-04 | Content version history list | Rahul | DONE | M4-01 | Versions listed with status badges; immutability clear in UI |
-| M4-05 | Replace mock API with real endpoints (M3-05, M2-06) | Rahul | TODO | M3-05, M2-06 | Mock fixtures removed from core workflow; real API used |
-| M4-06 | Accessibility pass: keyboard nav, focus order, axe scan | Rahul | TODO | M4-05 | axe reports 0 serious/critical; full keyboard path works |
+| M4-05 | Replace mock API with real endpoints (M3-05, M2-06) | Rahul | DONE | M3-05, M2-06 | Real authenticated API client now handles submission, analysis, version history, and review; mock adapter removed from the core workflow; frontend build and lint pass |
+| M4-06 | Accessibility pass: keyboard nav, focus order, axe scan | Rahul | IN PROGRESS | M4-05 | Semantic headings, labels, focus management and keyboard-safe controls are implemented; application-shell axe scan passes with 0 serious/critical violations; authenticated workflow verification remains blocked by Clerk auth configuration |
 
 ---
 
@@ -89,7 +89,7 @@
 | M5-03 | Release Passport list with status badges | Arvind | DONE | M0-01 | Passports listed; VALID/STALE/REVOKED/INVALID badges shown |
 | M5-04 | Stale impact view: which releases are affected by a fact change | Arvind | DONE | M5-03 | Stale releases listed with reason; revalidation action available |
 | M5-05 | Replace mock API with real endpoints (M2-05, M2-07) | Arvind | **VERIFIED** | M2-05, M2-07 | 6 API modules created and registered (workspaces, facts, evidence, content, review, releases); 48 integration tests pass; local Worker verified via wrangler dev --local — 2026-11-05 |
-| M5-06 | Accessibility pass: keyboard nav, focus order, axe scan | Arvind | TODO | M5-05 | axe reports 0 serious/critical; full keyboard path works |
+| M5-06 | Accessibility pass: keyboard nav, focus order, axe scan | Arvind | IN PROGRESS | M5-05 | Application shell axe scan passes with 0 serious/critical violations; authenticated governance-page keyboard verification remains blocked by Clerk test configuration |
 
 ---
 
@@ -114,8 +114,8 @@
 
 | ID | Task | Owner | Status | Depends On | Acceptance Criteria |
 |----|------|-------|--------|-----------|---------------------|
-| M6-01 | End-to-end workflow test: submit → analyze → review → passport → stale | Mritunjay | TODO | M3-05, M4-05, M5-05 | All 11 steps in `docs/PRD.md` §4 complete without errors |
-| M6-02 | Security checklist review: update evidence for all verified controls | Mritunjay | TODO | M6-01 | All applicable controls have evidence; NOT APPLICABLE items documented |
+| M6-01 | End-to-end workflow test: submit → analyze → review → passport → stale | Mritunjay | IN PROGRESS | M3-05, M4-05, M5-05 | Release passport creation is now human-review-gated, server-hashed, immutable, and covered by `test_releases_api.py`; full AI-backed stale workflow still needs a configured authenticated environment |
+| M6-02 | Security checklist review: update evidence for all verified controls | Mritunjay | IN PROGRESS | M6-01 | Verified controls include D1-backed per-workspace AI limits and baseline response headers; deployment/CI-only controls remain explicitly unverified |
 
 ---
 

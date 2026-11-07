@@ -1,7 +1,7 @@
 """
 M5-05 — Workspace API endpoints.
 
-GET /api/workspaces                              — List workspaces for the user's org
+GET /api/workspaces                              — List workspaces for the authenticated user
 GET /api/workspaces/{workspace_id}               — Returns workspace information.
 POST /api/workspaces/provision                   — Provision a workspace for the org.
 Protected by Clerk authentication + workspace authorization.
@@ -36,7 +36,7 @@ async def list_workspaces(
     request: Request,
     user = Depends(get_current_clerk_user),
 ):
-    """List workspaces accessible to the authenticated user's Clerk organization."""
+    """List workspaces accessible to the authenticated consumer."""
     env = request.scope.get("env")
     if env is None:
         raise HTTPException(status_code=401, detail="Authentication unavailable")
@@ -44,12 +44,12 @@ async def list_workspaces(
     if db is None:
         raise HTTPException(status_code=500, detail="Database unavailable")
 
-    if not user.has_organization:
-        return {"workspaces": []}
-
     mapping_repo = WorkspaceOrgMappingRepository(db)
-    org_id = user.org_id
-    workspace_id = await mapping_repo.get_workspace_id_by_org_id(org_id)
+    workspace_id = None
+    if user.org_id:
+        workspace_id = await mapping_repo.get_workspace_id_by_org_id(user.org_id)
+    if workspace_id is None:
+        workspace_id = await mapping_repo.get_workspace_id_by_user_id(user.user_id)
 
     workspaces = []
     if workspace_id:
@@ -60,7 +60,7 @@ async def list_workspaces(
                 "id": d["id"],
                 "name": d["name"],
                 "slug": d.get("slug"),
-                "org_id": org_id,
+                "owner_id": user.user_id,
             })
 
     return {"workspaces": workspaces}
@@ -72,11 +72,7 @@ async def provision_workspace(
     body: WorkspaceProvisionRequest,
     user = Depends(get_current_clerk_user),
 ):
-    """Provision a new BRANDCORE workspace for the authenticated user's Clerk organization.
-    
-    Only organization admins can provision. Idempotent — returns existing mapping
-    if one already exists for this org.
-    """
+    """Provision one personal workspace for the authenticated consumer."""
     env = request.scope.get("env")
     if env is None:
         raise HTTPException(status_code=401, detail="Authentication unavailable")
@@ -84,21 +80,8 @@ async def provision_workspace(
     if db is None:
         raise HTTPException(status_code=500, detail="Database unavailable")
 
-    if not user.has_organization:
-        raise HTTPException(status_code=403, detail="No active organization")
-
-    # Only org admins can provision workspaces
-    if user.org_role != "org:admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Administrator role required to provision a workspace",
-        )
-
     mapping_repo = WorkspaceOrgMappingRepository(db)
-    org_id = user.org_id
-
-    # Idempotent: if mapping already exists, return existing workspace
-    existing_workspace_id = await mapping_repo.get_workspace_id_by_org_id(org_id)
+    existing_workspace_id = await mapping_repo.get_workspace_id_by_user_id(user.user_id)
     if existing_workspace_id:
         existing = await WorkspaceRepository(db).get(existing_workspace_id)
         if existing:
@@ -107,7 +90,7 @@ async def provision_workspace(
                 "id": d["id"],
                 "name": d["name"],
                 "slug": d.get("slug"),
-                "org_id": org_id,
+                "owner_id": user.user_id,
                 "provisioned": False,
             }
 
@@ -123,13 +106,11 @@ async def provision_workspace(
         "status": "active",
     })())
 
-    # Create org-to-workspace mapping
-    await mapping_repo.create_mapping(
+    await mapping_repo.create_user_mapping(
         mapping_id=f"map_{uuid4().hex[:12]}",
         workspace_id=workspace_id,
-        org_id=org_id,
-        created_by=user.user_id,
         created_at=now,
+        user_id=user.user_id,
     )
 
     workspace = await repo.get(workspace_id)
@@ -138,7 +119,7 @@ async def provision_workspace(
         "id": d["id"],
         "name": d["name"],
         "slug": d.get("slug"),
-        "org_id": org_id,
+        "owner_id": user.user_id,
         "provisioned": True,
     }
 

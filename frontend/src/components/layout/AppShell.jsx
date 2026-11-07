@@ -30,8 +30,6 @@ export function AppShell({ workspace, backendStatus, children, header }) {
     localStorage.setItem('brandcore-sidebar-collapsed', String(sidebarCollapsed))
   }, [sidebarCollapsed])
 
-  const contentPadding = sidebarCollapsed ? 'pl-20' : 'pl-64'
-
   return (
     <div className="min-h-screen bg-canvas dark:bg-canvas-dark flex flex-col overflow-x-hidden">
       <TopBar

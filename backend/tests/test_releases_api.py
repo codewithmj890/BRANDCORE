@@ -8,6 +8,7 @@ Tests:
 
 Against real SQLite through SqliteD1Wrapper + TestClient.
 """
+import hashlib
 import json
 import os
 import sqlite3
@@ -181,3 +182,55 @@ class TestStaleImpact:
         resp = self.client.get("/api/workspaces/ws-nonexistent/releases/rp-1/stale-impact")
         assert resp.status_code == 404
 
+
+class TestReleaseCreation:
+    def setup_method(self):
+        self.conn = _setup_test_db()
+        self.conn.execute(
+            "INSERT INTO content_version "
+            "(id, workspace_id, content_item_id, version_number, body_text, sha256_hash, submitted_by, created_at) "
+            "VALUES ('cv-2', 'ws-1', 'ci-1', 2, 'Second body', 'unused', 'creator', '2026-01-02T00:00:00Z')"
+        )
+        self.conn.execute(
+            "INSERT INTO review_decision "
+            "(id, workspace_id, content_version_id, reviewer_id, reviewer_role, decision, "
+            "rationale, notes, analysis_batch_id, created_at) "
+            "VALUES ('rd-1', 'ws-1', 'cv-2', 'reviewer-1', 'org:admin', 'approved', "
+            "'Looks good', NULL, NULL, '2026-01-01T00:00:00Z')"
+        )
+        self.conn.commit()
+        self.client, self.wrapper = _make_client(self.conn)
+
+    def teardown_method(self):
+        self.conn.close()
+        app.dependency_overrides.clear()
+
+    def test_create_release_computes_server_hash_and_records_event(self):
+        response = self.client.post(
+            "/api/workspaces/ws-1/releases",
+            json={
+                "content_version_id": "cv-2",
+                "policy_version_id": "pol-1",
+                "fact_evidence_versions": [{"fact_id": "fact-1", "version": 1}],
+                "finding_ids_and_dispositions": [],
+                "content_sha256": "attacker-controlled-value",
+            },
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["content_sha256"] == hashlib.sha256(b"Second body").hexdigest()
+        assert data["status"] == "valid"
+        event = self.conn.execute(
+            "SELECT status FROM release_status_event WHERE passport_id = ?",
+            (data["id"],),
+        ).fetchone()
+        assert event["status"] == "approved"
+
+    def test_create_release_requires_human_approval(self):
+        self.conn.execute("DELETE FROM review_decision")
+        self.conn.commit()
+        response = self.client.post(
+            "/api/workspaces/ws-1/releases",
+            json={"content_version_id": "cv-2", "policy_version_id": "pol-1"},
+        )
+        assert response.status_code == 409

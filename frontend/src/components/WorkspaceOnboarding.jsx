@@ -1,27 +1,24 @@
 /**
  * BRANDCORE — Workspace Onboarding
- * Shown when a signed-in Clerk user has an active Organization but no
- * BRANDCORE workspace mapping.
- *
- * Organization admins can provision a new workspace.
- * Normal members are directed to ask an admin.
+ * Shown when a signed-in Clerk consumer has no personal workspace mapping.
  */
 import { useState, useCallback } from 'react'
-import { useAuth } from '@clerk/react'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { api } from '@/services/api'
-import { Button, Card, CardBody, CardTitle, EmptyState } from '@/components/ui'
+import { Button, Card, CardBody, CardTitle } from '@/components/ui'
 
-export function WorkspaceOnboarding({ orgId }) {
-  const { orgRole } = useAuth()
-  const { workspaceId, setWorkspaceId, setWorkspaceName: ctxSetWorkspaceName, setAuthStatus } = useWorkspace()
+export function WorkspaceOnboarding() {
+  const {
+    workspaceId,
+    setWorkspaceId,
+    setWorkspaceName: ctxSetWorkspaceName,
+    setAuthStatus,
+  } = useWorkspace()
   const [provisioning, setProvisioning] = useState(false)
   const [localWorkspaceName, setLocalWorkspaceName] = useState('')
   const [workspaceSlug, setWorkspaceSlug] = useState('')
   const [error, setError] = useState(null)
   const [provisioned, setProvisioned] = useState(false)
-
-  const isAdmin = orgRole === 'org:admin'
 
   const handleProvision = useCallback(async () => {
     if (!localWorkspaceName.trim()) {
@@ -45,9 +42,7 @@ export function WorkspaceOnboarding({ orgId }) {
         setProvisioned(true)
       }
     } catch (err) {
-      if (err.status === 403) {
-        setError('You do not have permission to provision a workspace. Ask an organization administrator.')
-      } else if (err.status === 401) {
+      if (err.status === 401) {
         setError('Session expired. Please sign in again.')
       } else {
         setError(err.message || 'Failed to provision workspace. Please try again.')
@@ -83,8 +78,6 @@ export function WorkspaceOnboarding({ orgId }) {
     )
   }
 
-  const isMember = !isAdmin
-
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center space-y-6 max-w-lg mx-auto">
       <div className="w-16 h-16 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center mb-4">
@@ -103,15 +96,14 @@ export function WorkspaceOnboarding({ orgId }) {
       </div>
       <h3 className="text-lg font-semibold text-text-primary">Workspace Setup</h3>
       <p className="text-text-secondary text-sm max-w-xs">
-        Your Clerk organization is active, but it isn&rsquo;t mapped to a BRANDCORE workspace yet.
+        Your account is ready, but it isn&rsquo;t mapped to a BRANDCORE workspace yet.
       </p>
 
-      {isAdmin && (
-        <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md">
           <CardBody className="p-6">
             <CardTitle>Create Workspace</CardTitle>
             <p className="text-xs text-text-secondary mb-6">
-              Provide a name for your new workspace. This will be linked to your Clerk organization.
+              Provide a name for your personal BRANDCORE workspace.
             </p>
             <div className="space-y-4">
               <div>
@@ -159,20 +151,6 @@ export function WorkspaceOnboarding({ orgId }) {
             </div>
           </CardBody>
         </Card>
-      )}
-
-      {isMember && (
-        <div className="max-w-md">
-          <p className="text-text-secondary text-sm mb-6">
-            You&rsquo;re a member of this organization, but not an administrator.
-            Only an organization admin can create a BRANDCORE workspace.
-          </p>
-          <p className="text-text-secondary text-xs mb-6">
-            Please ask your organization administrator to set up the workspace,
-            then refresh this page.
-          </p>
-        </div>
-      )}
     </div>
   )
 }

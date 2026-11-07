@@ -7,7 +7,8 @@
 
 ## Migration Approach
 
-Migrations are plain SQL files applied with Wrangler:
+Migrations are plain SQL files applied with Wrangler. The current schema includes
+the consumer workspace mapping and workspace analysis rate-limit tables:
 
 ```powershell
 # Apply all pending migrations

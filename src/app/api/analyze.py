@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app.services.analysis_service import AnalysisService
-from app.services.ai_extraction import ClaimExtractionService
+from app.services.ai_extraction import ClaimExtractionError, ClaimExtractionService
 from app.services.verification_engine import VerificationEngine
 from app.repositories.claim_repo import CandidateClaimRepository
 from app.repositories.finding_repo import VerificationFindingRepository
@@ -22,6 +22,10 @@ from app.repositories.policy_repo import PolicyRepository
 from app.repositories.terminology_repo import TerminologyRepository
 from app.repositories.dependency_repo import ClaimFactDependencyRepository
 from app.repositories.event_repo import AuditEventRepository
+from app.services.rate_limit import (
+    WorkspaceRateLimitExceeded,
+    check_workspace_analysis_limit,
+)
 
 router = APIRouter()
 
@@ -73,6 +77,14 @@ def _env_bindings(request: Request):
 async def analyze(workspace_id: str, content_version_id: str,
                   request: Request) -> AnalyzeResponse:
     db, ai = _env_bindings(request)
+    try:
+        await check_workspace_analysis_limit(db, workspace_id)
+    except WorkspaceRateLimitExceeded:
+        raise HTTPException(
+            status_code=429,
+            detail="Analysis rate limit exceeded. Try again later.",
+            headers={"Retry-After": "60"},
+        )
 
     service = AnalysisService(
         db=db,

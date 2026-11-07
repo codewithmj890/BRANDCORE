@@ -1,11 +1,12 @@
 """
 BRANDCORE — Workspace authorization dependencies.
 
-Maps Clerk Organization IDs to BRANDCORE workspaces via D1.
-Enforces: valid Clerk identity -> active org -> workspace mapping -> matching org_id -> required permission.
+Maps consumer Clerk user IDs to BRANDCORE workspaces via D1. Legacy organization
+mappings remain supported for existing deployments.
 """
 from fastapi import Depends, HTTPException, Request
 from typing import Any
+import sqlite3
 
 from app.auth.clerk import ClerkUser, get_current_clerk_user
 
@@ -68,23 +69,34 @@ class WorkspaceOrgMappingRepository:
         """).bind(workspace_id, org_id).first()
         return row is not None
 
+    async def get_workspace_id_by_user_id(self, user_id: str) -> str | None:
+        try:
+            row = await self.db.prepare("""
+                SELECT workspace_id FROM workspace_user_mapping WHERE user_id = ?
+            """).bind(user_id).first()
+        except sqlite3.OperationalError as exc:
+            # Keep older local/test schemas usable until migration 0006 is applied.
+            if "no such table: workspace_user_mapping" not in str(exc):
+                raise
+            return None
+        return row["workspace_id"] if row else None
+
+    async def create_user_mapping(
+        self, mapping_id: str, workspace_id: str, user_id: str, created_at: str
+    ) -> None:
+        await self.db.prepare("""
+            INSERT INTO workspace_user_mapping (id, workspace_id, user_id, created_at)
+            VALUES (?, ?, ?, ?)
+        """).bind(mapping_id, workspace_id, user_id, created_at).run()
+
 
 # ---------------------------------------------------------------------------
-# Dependency: get_current_organization
+# Dependency: authenticated consumer
 # ---------------------------------------------------------------------------
 
 async def get_current_organization(
     clerk_user: ClerkUser = Depends(get_current_clerk_user),
 ) -> ClerkUser:
-    """
-    Require the authenticated Clerk user to have an active organization.
-    Raises 403 if no org_id is present in the token.
-    """
-    if not clerk_user.has_organization:
-        raise HTTPException(
-            status_code=403,
-            detail="No active organization. Please select or create an organization.",
-        )
     return clerk_user
 
 
@@ -96,9 +108,8 @@ def require_workspace_access(workspace_id_param: str = "workspace_id"):
     """
     Factory for a dependency that enforces workspace access:
       1. Valid Clerk user (via get_current_clerk_user)
-      2. Active organization (via get_current_organization)
-      3. Existing D1 workspace mapping
-      4. Matching Clerk Organization ID (org_id -> workspace_id must match)
+      2. Existing D1 user workspace mapping
+      3. Legacy organization mapping when an org claim is present
 
     Usage:
         @router.post("/workspaces/{workspace_id}/...")
@@ -126,14 +137,19 @@ def require_workspace_access(workspace_id_param: str = "workspace_id"):
 
         mapping_repo = WorkspaceOrgMappingRepository(db)
 
-        # Organization must be mapped to at least one workspace
-        mapped_workspace_id = await mapping_repo.get_workspace_id_by_org_id(
-            clerk_user.org_id
-        )
+        mapped_workspace_id = None
+        if clerk_user.org_id:
+            mapped_workspace_id = await mapping_repo.get_workspace_id_by_org_id(
+                clerk_user.org_id
+            )
+        else:
+            mapped_workspace_id = await mapping_repo.get_workspace_id_by_user_id(
+                clerk_user.user_id
+            )
         if mapped_workspace_id is None:
             raise HTTPException(
                 status_code=403,
-                detail="Organization is not mapped to any workspace",
+                detail="User is not mapped to any workspace",
             )
 
         # If a specific workspace_id is provided, verify access to it
@@ -182,8 +198,8 @@ def require_workspace_permission(
         clerk_user: ClerkUser = Depends(require_workspace_access(workspace_id_param)),
     ) -> ClerkUser:
         if require_admin:
-            # Only organization administrators can approve/release content
-            if clerk_user.org_role != "org:admin":
+            # Consumer workspace owners may approve and release their own content.
+            if clerk_user.org_role not in (None, "org:admin"):
                 raise HTTPException(
                     status_code=403,
                     detail="Administrator role required for this action",

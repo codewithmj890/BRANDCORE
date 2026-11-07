@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
@@ -6,29 +7,31 @@
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
-  --bg-app:          #0f0f0f;
-  --bg-surface:      #1c1c1c;
-  --bg-overlay:      #262626;
-  --bg-muted:        #2a2a2a;
-  --bg-subtle:       #1a1a1a;
+  --bg-app: #0f0f0f;
+  --bg-surface: #1c1c1c;
+  --bg-overlay: #262626;
+  --bg-muted: #2a2a2a;
+  --bg-subtle: #1a1a1a;
 
-  --border-default:  #2e2e2e;
-  --border-strong:   #3d3d3d;
+  --border-default: #2e2e2e;
+  --border-strong: #3d3d3d;
 
-  --text-primary:    #ffffff;
-  --text-secondary:  #d4d4d4;
-  --text-tertiary:   #a3a3a3;
-  --text-disabled:   #737373;
+  --text-primary: #ffffff;
+  --text-secondary: #d4d4d4;
+  --text-tertiary: #a3a3a3;
+  --text-disabled: #737373;
 
-  --brand:           #3ecf8e;
-  --brand-dim:       #2a9d6e;
+  --brand: #3ecf8e;
+  --brand-dim: #2a9d6e;
 
-  --focus-ring:      #3ecf8e;
-  --shadow-modal:    0 24px 48px rgba(0,0,0,0.7);
+  --focus-ring: #3ecf8e;
+  --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.7);
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
 html {
   -webkit-font-smoothing: antialiased;
@@ -47,8 +50,14 @@ body {
 
 /* ── Light/Dark mode base layer ─────────────────────────────────────────────── */
 @layer base {
-  html { color-scheme: light; }
-  html.dark { color-scheme: dark; }
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-canvas text-text-primary;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -56,12 +65,26 @@ body {
     line-height: 1.5;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
-  * { @apply border-border; }
-  html.dark .bg-surface { background-color: #111827; }
-  html.dark .bg-surface-muted { background-color: #1E293B; }
-  html.dark .text-slate-500 { color: #94A3B8; }
-  html.dark .border-border { border-color: #334155; }
-  html.dark { color-scheme: dark; }
+
+  * {
+    @apply border-border;
+  }
+
+  html.dark .bg-surface {
+    background-color: #111827;
+  }
+
+  html.dark .bg-surface-muted {
+    background-color: #1E293B;
+  }
+
+  html.dark .text-slate-500 {
+    color: #94A3B8;
+  }
+
+  html.dark .border-border {
+    border-color: #334155;
+  }
 }
 
 @layer components {
@@ -71,23 +94,49 @@ body {
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
 
 /* ── Focus ─────────────────────────────────────────────────────────────────── */
-:focus-visible { outline: 1.5px solid var(--focus-ring); outline-offset: 2px; }
+:focus-visible {
+  outline: 1.5px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 
 /* ── Selection ─────────────────────────────────────────────────────────────── */
-::selection { background: rgba(62,207,142,0.2); color: #ededed; }
+::selection {
+  background: rgba(62, 207, 142, 0.2);
+  color: #ededed;
+}
 
 /* ── Scrollbar hide utility ────────────────────────────────────────────────── */
-.scrollbar-none { scrollbar-width: none; }
-.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
 
 /* ── Table ─────────────────────────────────────────────────────────────────── */
-table { border-spacing: 0; }
+table {
+  border-spacing: 0;
+}
 
 /* ── Date picker ───────────────────────────────────────────────────────────── */
 input[type="date"]::-webkit-calendar-picker-indicator {

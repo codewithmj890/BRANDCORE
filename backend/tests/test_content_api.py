@@ -199,4 +199,3 @@ class TestContentVersions:
         # ws-2 doesn't exist -> 404
         resp = self.client.get("/api/workspaces/ws-2/content/ci-test/versions")
         assert resp.status_code == 404
-

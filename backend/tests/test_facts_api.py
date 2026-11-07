@@ -247,4 +247,3 @@ class TestFactsPatch:
             "text": "Updated",
         })
         assert resp.status_code == 404
-

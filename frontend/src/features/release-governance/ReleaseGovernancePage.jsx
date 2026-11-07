@@ -52,7 +52,10 @@ export default function ReleaseGovernancePage() {
     setError(null)
     try {
       const data = await api.getReleases(workspaceId)
-      setReleases(data.releases || [])
+      setReleases((data.releases || []).map((release) => ({
+        ...release,
+        status: String(release.status || '').toUpperCase(),
+      })))
       setDemoMode(false)
     } catch (err) {
       if (err.status === 401 || err.status === 403) {
@@ -63,11 +66,10 @@ export default function ReleaseGovernancePage() {
       } else if (err.status === 404) {
         setError('Workspace not found.')
         setDemoMode(false)
-      } else {
-        setDemoMode(true)
-        setReleases(DEMO_RELEASES)
-        setError(null)
-      }
+        } else {
+          setDemoMode(false)
+          setError(err.message || 'Unable to load releases.')
+        }
     } finally {
       setLoading(false)
     }
@@ -92,7 +94,9 @@ export default function ReleaseGovernancePage() {
   const openStaleImpact = (releaseId) => {
     const release = releases.find((r) => r.id === releaseId)
     if (release && release.status === 'STALE') {
-      setSelectedRelease({ ...DEMO_STALE_IMPACT, release_id: releaseId })
+      api.getStaleImpact(workspaceId, releaseId)
+        .then((impact) => setSelectedRelease(impact))
+        .catch((error) => setError(error.message || 'Unable to load stale impact.'))
     }
   }
 

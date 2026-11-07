@@ -138,4 +138,3 @@ class TestWorkspaceAuthIntegration:
         resp = client.get("/api/health")
         assert resp.status_code == 200
         conn.close()
-

@@ -1,20 +1,25 @@
 /**
  * BRANDCORE — Workspace Context
  * Manages Clerk authentication state and resolves the active workspace
- * for the user's Clerk organization. Provides workspaceId to pages
+ * for the authenticated Clerk consumer. Provides workspaceId to pages
  * without hardcoding any workspace value.
  */
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@clerk/react'
-import { api, onAuthError } from '@/services/api'
+import { api, onAuthError, setAuthTokenProvider } from '@/services/api'
 
 const WorkspaceContext = createContext(null)
 
 export function WorkspaceProvider({ children }) {
-  const { isSignedIn, isLoaded, orgId, getToken } = useAuth()
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const [workspaceId, setWorkspaceId] = useState(null)
   const [workspaceName, setWorkspaceName] = useState(null)
-  const [authStatus, setAuthStatus] = useState('loading') // loading | signed-out | no-org | no-workspace | ready
+  const [authStatus, setAuthStatus] = useState('loading') // loading | signed-out | no-workspace | ready
+
+  useEffect(() => {
+    setAuthTokenProvider(getToken)
+    return () => setAuthTokenProvider(null)
+  }, [getToken])
 
   // Listen for backend auth errors (401/403)
   useEffect(() => {
@@ -49,32 +54,17 @@ export function WorkspaceProvider({ children }) {
       return
     }
 
-    // Signed in but no active organization
-    if (!orgId) {
-      setAuthStatus('no-org')
-      setWorkspaceId(null)
-      setWorkspaceName(null)
-      return
-    }
+    resolveWorkspace()
+  }, [isLoaded, isSignedIn])
 
-    // Signed in with org — resolve workspace
-    resolveWorkspace(orgId)
-  }, [isLoaded, isSignedIn, orgId])
-
-  const resolveWorkspace = useCallback(async (organizationId) => {
+  const resolveWorkspace = useCallback(async () => {
     try {
       // Try to discover workspaces accessible to this org
       // We attempt the workspace list endpoint first
       const data = await api.listWorkspaces()
       const workspaces = data.workspaces || []
 
-      const matching = workspaces.find((w) => w.org_id === organizationId || w.id === organizationId)
-      if (matching) {
-        setWorkspaceId(matching.id)
-        setWorkspaceName(matching.name || matching.id)
-        setAuthStatus('ready')
-      } else if (workspaces.length > 0) {
-        // Fall back to first available workspace
+      if (workspaces.length > 0) {
         setWorkspaceId(workspaces[0].id)
         setWorkspaceName(workspaces[0].name || workspaces[0].id)
         setAuthStatus('ready')
@@ -101,7 +91,6 @@ export function WorkspaceProvider({ children }) {
   const value = {
     isSignedIn,
     isLoaded,
-    orgId,
     workspaceId,
     workspaceName,
     authStatus,
